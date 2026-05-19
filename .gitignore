@@ -1,0 +1,17 @@
+﻿# Foundation backend ignores
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Dependencies
+backend/node_modules/
+
+# Build output
+backend/dist/
+
+# Test coverage
+backend/coverage/
+backend/.nyc_output/
+
+rule
+CONTINUITY.md

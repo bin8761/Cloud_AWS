@@ -1,0 +1,11 @@
+// CloudCMS Foundation Prisma schema.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Migrations are not run by application startup.
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
