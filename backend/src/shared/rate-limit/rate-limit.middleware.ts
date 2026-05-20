@@ -2,8 +2,15 @@
 
 import { env } from "../../config/env";
 import { AppError } from "../errors/app-error";
-import type { RateLimitStore } from "./rate-limit.store";
+import type { RateLimitBucketState, RateLimitStore } from "./rate-limit.store";
 import type { TokenBucketConfig } from "./token-bucket";
+
+export type RateLimitExceededContext = {
+  request: Request;
+  key: string;
+  bucketState: RateLimitBucketState;
+  config: TokenBucketConfig;
+};
 
 type CreateRateLimitMiddlewareOptions = {
   store: RateLimitStore;
@@ -13,6 +20,7 @@ type CreateRateLimitMiddlewareOptions = {
   refillTokens?: number;
   refillWindowSeconds?: number;
   includeHealthEndpoints?: boolean;
+  onRateLimitExceeded?: (context: RateLimitExceededContext) => void;
 };
 
 const buildDefaultRateLimitKey = (request: Request): string => {
@@ -75,6 +83,17 @@ export const createRateLimitMiddleware = (
     const bucketState = resolveBucketState(options.store, key, effectiveConfig, nowMs);
 
     if (bucketState.tokens <= 0) {
+      try {
+        options.onRateLimitExceeded?.({
+          request,
+          key,
+          bucketState,
+          config: effectiveConfig,
+        });
+      } catch {
+        // Never block rate-limit responses because of logging-hook failures.
+      }
+
       options.store.set(key, bucketState);
       next(
         new AppError(429, "RATE_LIMITED", "Too many requests. Please try again later.", {

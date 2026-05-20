@@ -8,6 +8,7 @@ export type NodeEnv = "development" | "test" | "production";
 export type RateLimitStore = "memory";
 
 const nodeEnvSchema = z.enum(["development", "test", "production"]);
+const booleanLikeSchema = z.enum(["true", "false", "1", "0"]);
 const logLevelSchema = z.enum([
   "fatal",
   "error",
@@ -18,7 +19,8 @@ const logLevelSchema = z.enum([
   "silent",
 ]);
 
-export const envSchema = z.object({
+export const envSchema = z
+  .object({
   NODE_ENV: nodeEnvSchema,
   PORT: z.coerce.number().int().positive().max(65535),
   DATABASE_URL: z.string().trim().min(1).startsWith("mysql://"),
@@ -31,10 +33,48 @@ export const envSchema = z.object({
   RATE_LIMIT_DEFAULT_REFILL_WINDOW_SECONDS: z.coerce.number().positive(),
   RATE_LIMIT_STORE: z.literal("memory"),
   JWT_ACCESS_SECRET: z.string(),
+  JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive(),
   JWT_REFRESH_SECRET: z.string(),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive(),
+  VERIFICATION_CODE_TTL_SECONDS: z.coerce.number().int().positive(),
+  PENDING_REGISTRATION_TTL_SECONDS: z.coerce.number().int().positive(),
+  AUTH_BCRYPT_COST: z.coerce.number().int().positive(),
+  SMTP_HOST: z.string().trim().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().max(65535).optional(),
+  SMTP_SECURE: booleanLikeSchema.optional(),
+  SMTP_USER: z.string().trim().optional(),
+  SMTP_PASSWORD: z.string().trim().optional(),
+  SMTP_FROM_EMAIL: z.string().trim().email().optional(),
+  SMTP_FROM_NAME: z.string().trim().optional(),
   AWS_REGION: z.string(),
   S3_BUCKET_NAME: z.string(),
-});
+  })
+  .superRefine((data, ctx) => {
+    if (data.NODE_ENV === "test") {
+      return;
+    }
+
+    const requiredSmtpKeys: Array<keyof typeof data> = [
+      "SMTP_HOST",
+      "SMTP_PORT",
+      "SMTP_SECURE",
+      "SMTP_USER",
+      "SMTP_PASSWORD",
+      "SMTP_FROM_EMAIL",
+      "SMTP_FROM_NAME",
+    ];
+
+    for (const key of requiredSmtpKeys) {
+      const value = data[key];
+      if (value === undefined || value === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: "missing or invalid value",
+        });
+      }
+    }
+  });
 
 export interface Env {
   app: {
@@ -60,7 +100,22 @@ export interface Env {
   };
   auth: {
     jwtAccessSecret: string;
+    jwtAccessTokenTtlSeconds: number;
     jwtRefreshSecret: string;
+    refreshTokenTtlDays: number;
+    verificationCodeTtlSeconds: number;
+    pendingRegistrationTtlSeconds: number;
+    bcryptCost: number;
+  };
+  smtp: {
+    useMockSender: boolean;
+    host: string;
+    port: number;
+    secure: boolean;
+    user: string;
+    password: string;
+    fromEmail: string;
+    fromName: string;
   };
   aws: {
     region: string;
@@ -107,7 +162,25 @@ export const env: Env = {
   },
   auth: {
     jwtAccessSecret: parsedEnv.JWT_ACCESS_SECRET,
+    jwtAccessTokenTtlSeconds: parsedEnv.JWT_ACCESS_TOKEN_TTL_SECONDS,
     jwtRefreshSecret: parsedEnv.JWT_REFRESH_SECRET,
+    refreshTokenTtlDays: parsedEnv.REFRESH_TOKEN_TTL_DAYS,
+    verificationCodeTtlSeconds: parsedEnv.VERIFICATION_CODE_TTL_SECONDS,
+    pendingRegistrationTtlSeconds: parsedEnv.PENDING_REGISTRATION_TTL_SECONDS,
+    bcryptCost: parsedEnv.AUTH_BCRYPT_COST,
+  },
+  smtp: {
+    useMockSender: parsedEnv.NODE_ENV === "test",
+    host: parsedEnv.SMTP_HOST ?? "",
+    port: parsedEnv.SMTP_PORT ?? 0,
+    secure:
+      parsedEnv.SMTP_SECURE === undefined
+        ? false
+        : parsedEnv.SMTP_SECURE === "true" || parsedEnv.SMTP_SECURE === "1",
+    user: parsedEnv.SMTP_USER ?? "",
+    password: parsedEnv.SMTP_PASSWORD ?? "",
+    fromEmail: parsedEnv.SMTP_FROM_EMAIL ?? "",
+    fromName: parsedEnv.SMTP_FROM_NAME ?? "",
   },
   aws: {
     region: parsedEnv.AWS_REGION,

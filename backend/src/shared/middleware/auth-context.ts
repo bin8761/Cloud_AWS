@@ -1,15 +1,20 @@
 import type { RequestHandler } from "express";
 
+export type AuthRole = "super_admin" | "shop_admin" | "staff";
+export type AuthTokenType = "access";
+
 export type AuthContext = {
-  tenantId?: string;
   userId?: string;
+  tenantId?: string | null;
+  role?: AuthRole;
+  tokenType?: AuthTokenType;
   computerId?: string;
 };
 
 export const authContextMiddleware: RequestHandler = (req, _res, next) => {
-  // Foundation phase intentionally provides placeholder context only.
-  // Real JWT verification, RBAC checks, and device-token validation are
-  // implemented by later modules.
-  req.authContext = {};
+  // Placeholder phase for public routes:
+  // keep requests unauthenticated by default and never infer auth context
+  // from headers/body until authRequired JWT validation is implemented.
+  req.authContext = undefined;
   next();
 };
