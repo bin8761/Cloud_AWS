@@ -5,6 +5,7 @@ import helmet from "helmet";
 import { env } from "./config/env";
 import { authRouter } from "./modules/auth/auth.routes";
 import { healthRouter } from "./modules/health/health.routes";
+import { tenantsRouter } from "./modules/tenants/tenants.routes";
 import { errorHandler } from "./shared/errors/error-handler";
 import { requestLogger } from "./shared/logging/request-logger";
 import { authContextMiddleware } from "./shared/middleware/auth-context";
@@ -35,5 +36,6 @@ app.use(
 app.use(authContextMiddleware);
 app.use(healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/tenants", tenantsRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
