@@ -33,6 +33,7 @@ Important values in `.env`:
 DATABASE_URL=mysql://root:@localhost:3306/cloudcms
 JWT_ACCESS_SECRET=local-dev-access-secret
 JWT_REFRESH_SECRET=local-dev-refresh-secret
+DEVICE_TOKEN_HASH_SECRET=local-dev-device-token-hash-secret
 AWS_REGION=ap-southeast-1
 S3_BUCKET_NAME=local-placeholder-bucket
 ```

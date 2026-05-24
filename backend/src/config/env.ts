@@ -35,6 +35,7 @@ export const envSchema = z
   JWT_ACCESS_SECRET: z.string(),
   JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive(),
   JWT_REFRESH_SECRET: z.string(),
+  DEVICE_TOKEN_HASH_SECRET: z.string().trim().min(1),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive(),
   VERIFICATION_CODE_TTL_SECONDS: z.coerce.number().int().positive(),
   PENDING_REGISTRATION_TTL_SECONDS: z.coerce.number().int().positive(),
@@ -107,6 +108,9 @@ export interface Env {
     pendingRegistrationTtlSeconds: number;
     bcryptCost: number;
   };
+  computers: {
+    deviceTokenHashSecret: string;
+  };
   smtp: {
     useMockSender: boolean;
     host: string;
@@ -168,6 +172,9 @@ export const env: Env = {
     verificationCodeTtlSeconds: parsedEnv.VERIFICATION_CODE_TTL_SECONDS,
     pendingRegistrationTtlSeconds: parsedEnv.PENDING_REGISTRATION_TTL_SECONDS,
     bcryptCost: parsedEnv.AUTH_BCRYPT_COST,
+  },
+  computers: {
+    deviceTokenHashSecret: parsedEnv.DEVICE_TOKEN_HASH_SECRET,
   },
   smtp: {
     useMockSender: parsedEnv.NODE_ENV === "test",

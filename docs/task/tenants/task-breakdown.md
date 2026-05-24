@@ -404,13 +404,13 @@ Implementation constraints:
 
 ## 26. Documentation and Handoff
 
-- [ ] Task 285: Update Tenants implementation notes with the final endpoint list.
-- [ ] Task 286: Document that no Tenants-specific environment variables are required.
-- [ ] Task 287: Document that no Prisma migration is required unless schema drift is discovered.
-- [ ] Task 288: Document that soft delete, archive jobs, and audit persistence remain future work.
-- [ ] Task 289: Document manual verification steps for `shop_admin`, `staff`, and `super_admin` tokens.
-- [ ] Task 290: Document Web Admin handoff notes for current tenant profile, current tenant name update, and super-admin tenant management screens.
-- [ ] Task 291: Update task completion statuses in this file as implementation progresses.
+- [x] Task 285: Update Tenants implementation notes with the final endpoint list.
+- [x] Task 286: Document that no Tenants-specific environment variables are required.
+- [x] Task 287: Document that no Prisma migration is required unless schema drift is discovered.
+- [x] Task 288: Document that soft delete, archive jobs, and audit persistence remain future work.
+- [x] Task 289: Document manual verification steps for `shop_admin`, `staff`, and `super_admin` tokens.
+- [x] Task 290: Document Web Admin handoff notes for current tenant profile, current tenant name update, and super-admin tenant management screens.
+- [x] Task 291: Update task completion statuses in this file as implementation progresses.
 
 ## 27. Manual Verification
 

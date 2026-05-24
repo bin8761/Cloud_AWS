@@ -993,7 +993,7 @@ describe.sequential("Auth API tests (Task 310->327)", () => {
     assertNoSecrets(meResponse.body);
   });
 
-  it("Task 327: auth route rate limits return RATE_LIMITED", async () => {
+  it("Task 327: auth route rate limits return TOO_MANY_REQUESTS", async () => {
     const payload = createRegisterTenantPayload({
       adminEmail: "ratelimit@example.com",
       tenantCode: "RATE_LIMIT_TENANT",
@@ -1011,7 +1011,7 @@ describe.sequential("Auth API tests (Task 310->327)", () => {
     expect(successResponses).toHaveLength(3);
     expect(rateLimitedResponses).toHaveLength(1);
     expect(rateLimitedResponses[0].body.success).toBe(false);
-    expect(rateLimitedResponses[0].body.error.code).toBe("RATE_LIMITED");
+    expect(rateLimitedResponses[0].body.error.code).toBe("TOO_MANY_REQUESTS");
   });
 });
 

@@ -1,4 +1,4 @@
-﻿# Task Breakdown: CloudCMS Foundation Module
+# Task Breakdown: CloudCMS Foundation Module
 
 Source TDD: `docs/tdd/foundation/technical-design.md`
 
@@ -263,112 +263,116 @@ Implementation constraints:
 
 ## 13. Testing Infrastructure
 
-- [ ] Task 210: Implement `backend/src/shared/testing/test-app.ts`.
-- [ ] Task 211: Ensure `test-app.ts` creates/imports the Express app without calling `listen`.
-- [ ] Task 212: Add a test helper for setting required env values when needed.
-- [ ] Task 213: Add a test helper or mock pattern for Prisma health checks.
-- [ ] Task 214: Configure Vitest globals or imports consistently.
-- [ ] Task 215: Configure test file naming conventions under `backend/tests/foundation/`.
-- [ ] Task 216: Ensure test setup does not require running real migrations.
+- [x] Task 210: Implement `backend/src/shared/testing/test-app.ts`.
+- [x] Task 211: Ensure `test-app.ts` creates/imports the Express app without calling `listen`.
+- [x] Task 212: Add a test helper for setting required env values when needed.
+- [x] Task 213: Add a test helper or mock pattern for Prisma health checks.
+- [x] Task 214: Configure Vitest globals or imports consistently.
+- [x] Task 215: Configure test file naming conventions under `backend/tests/foundation/`.
+- [x] Task 216: Ensure test setup does not require running real migrations.
 
 ## 14. Unit Tests
 
-- [ ] Task 217: Create `backend/tests/foundation/app-error.test.ts`.
-- [ ] Task 218: Test that `AppError` stores `statusCode`.
-- [ ] Task 219: Test that `AppError` stores `code`.
-- [ ] Task 220: Test that `AppError` stores `message`.
-- [ ] Task 221: Test that `AppError` stores optional `details`.
-- [ ] Task 222: Create `backend/tests/foundation/error-handler.test.ts`.
-- [ ] Task 223: Test that the error handler maps `AppError` to the standard error response.
-- [ ] Task 224: Test that the error handler uses the `AppError.statusCode`.
-- [ ] Task 225: Test that unknown errors become `INTERNAL_ERROR`.
-- [ ] Task 226: Test that production responses do not expose stack traces.
-- [ ] Task 227: Test that development logging can retain useful error context.
-- [ ] Task 228: Create `backend/tests/foundation/env.test.ts`.
-- [ ] Task 229: Test missing required env values fail validation.
-- [ ] Task 230: Test invalid `PORT` fails validation.
+- [x] Task 217: Create `backend/tests/foundation/app-error.test.ts`.
+- [x] Task 218: Test that `AppError` stores `statusCode`.
+- [x] Task 219: Test that `AppError` stores `code`.
+- [x] Task 220: Test that `AppError` stores `message`.
+- [x] Task 221: Test that `AppError` stores optional `details`.
+- [x] Task 222: Create `backend/tests/foundation/error-handler.test.ts`.
+- [x] Task 223: Test that the error handler maps `AppError` to the standard error response.
+- [x] Task 224: Test that the error handler uses the `AppError.statusCode`.
+- [x] Task 225: Test that unknown errors become `INTERNAL_ERROR`.
+- [x] Task 226: Test that production responses do not expose stack traces.
+- [x] Task 227: Test that development logging can retain useful error context.
+- [x] Task 228: Create `backend/tests/foundation/env.test.ts`.
+- [x] Task 229: Test missing required env values fail validation.
+- [x] Task 230: Test invalid `PORT` fails validation.
 - [ ] Task 231: Test invalid body limit values fail validation if the env schema enforces a pattern.
-- [ ] Task 232: Test rate-limit env values are parsed into positive numbers.
-- [ ] Task 233: Create `backend/tests/foundation/validate-request.test.ts`.
-- [ ] Task 234: Test valid body input reaches the handler.
-- [ ] Task 235: Test invalid body input returns `VALIDATION_ERROR`.
-- [ ] Task 236: Test valid query input reaches the handler.
-- [ ] Task 237: Test invalid query input returns `VALIDATION_ERROR`.
-- [ ] Task 238: Test valid params input reaches the handler.
-- [ ] Task 239: Test invalid params input returns `VALIDATION_ERROR`.
-- [ ] Task 240: Create `backend/tests/foundation/token-bucket.test.ts`.
-- [ ] Task 241: Test token consumption when tokens are available.
-- [ ] Task 242: Test rejection when the bucket is empty.
-- [ ] Task 243: Test token refill after elapsed time.
-- [ ] Task 244: Test token count never exceeds capacity.
-- [ ] Task 245: Test separate keys use separate buckets.
-- [ ] Task 246: Test middleware returns `RATE_LIMITED` through the standard error response.
-- [ ] Task 247: Test stale bucket cleanup or cleanup strategy if implemented.
+- [x] Task 232: Test rate-limit env values are parsed into positive numbers.
+- [x] Task 233: Create `backend/tests/foundation/validate-request.test.ts`.
+- [x] Task 234: Test valid body input reaches the handler.
+- [x] Task 235: Test invalid body input returns `VALIDATION_ERROR`.
+- [x] Task 236: Test valid query input reaches the handler.
+- [x] Task 237: Test invalid query input returns `VALIDATION_ERROR`.
+- [x] Task 238: Test valid params input reaches the handler.
+- [x] Task 239: Test invalid params input returns `VALIDATION_ERROR`.
+- [x] Task 240: Create `backend/tests/foundation/token-bucket.test.ts`.
+- [x] Task 241: Test token consumption when tokens are available.
+- [x] Task 242: Test rejection when the bucket is empty.
+- [x] Task 243: Test token refill after elapsed time.
+- [x] Task 244: Test token count never exceeds capacity.
+- [x] Task 245: Test separate keys use separate buckets.
+- [x] Task 246: Test middleware returns `RATE_LIMITED` through the standard error response.
+- [x] Task 247: Test stale bucket cleanup or cleanup strategy if implemented.
 
 ## 15. API Tests
 
-- [ ] Task 248: Create `backend/tests/foundation/health.test.ts`.
-- [ ] Task 249: Test `GET /health` returns HTTP 200.
-- [ ] Task 250: Test `GET /health` returns `{ success: true }`.
-- [ ] Task 251: Test `GET /health` does not require a DB mock or DB connection.
-- [ ] Task 252: Test `GET /api/health/runtime` returns HTTP 200.
-- [ ] Task 253: Test `GET /api/health/runtime` includes environment.
-- [ ] Task 254: Test `GET /api/health/runtime` includes Node.js version.
-- [ ] Task 255: Test `GET /api/health/runtime` includes uptime.
-- [ ] Task 256: Test `GET /api/health/runtime` includes memory data.
-- [ ] Task 257: Test `GET /api/health/db` returns HTTP 200 when Prisma health succeeds.
-- [ ] Task 258: Test `GET /api/health/db` returns `database: "mysql"` or equivalent MySQL status.
-- [ ] Task 259: Test `GET /api/health/db` returns `DATABASE_ERROR` when Prisma health fails.
-- [ ] Task 260: Test DB health error response does not expose credentials.
-- [ ] Task 261: Test an unknown route returns `NOT_FOUND`.
-- [ ] Task 262: Test unknown route response follows `{ success: false, error: ... }`.
-- [ ] Task 263: Test each API response has a request ID header or traceable request ID context.
-- [ ] Task 264: Test request logging can include method, path, status code, latency, and request ID.
-- [ ] Task 265: Test JSON body limit behavior if practical in the test runtime.
+- [x] Task 248: Create `backend/tests/foundation/health.test.ts`.
+- [x] Task 249: Test `GET /health` returns HTTP 200.
+- [x] Task 250: Test `GET /health` returns `{ success: true }`.
+- [x] Task 251: Test `GET /health` does not require a DB mock or DB connection.
+- [x] Task 252: Test `GET /api/health/runtime` returns HTTP 200.
+- [x] Task 253: Test `GET /api/health/runtime` includes environment.
+- [x] Task 254: Test `GET /api/health/runtime` includes Node.js version.
+- [x] Task 255: Test `GET /api/health/runtime` includes uptime.
+- [x] Task 256: Test `GET /api/health/runtime` includes memory data.
+- [x] Task 257: Test `GET /api/health/db` returns HTTP 200 when Prisma health succeeds.
+- [x] Task 258: Test `GET /api/health/db` returns `database: "mysql"` or equivalent MySQL status.
+- [x] Task 259: Test `GET /api/health/db` returns `DATABASE_ERROR` when Prisma health fails.
+- [x] Task 260: Test DB health error response does not expose credentials.
+- [x] Task 261: Test an unknown route returns `NOT_FOUND`.
+- [x] Task 262: Test unknown route response follows `{ success: false, error: ... }`.
+- [x] Task 263: Test each API response has a request ID header or traceable request ID context.
+- [x] Task 264: Test request logging can include method, path, status code, latency, and request ID.
+- [x] Task 265: Test JSON body limit behavior if practical in the test runtime.
 
 ## 16. Documentation and Handoff
 
-- [ ] Task 266: Create or update `backend/README.md` with Foundation setup notes.
-- [ ] Task 267: Document the backend folder structure and key file responsibilities.
-- [ ] Task 268: Document npm scripts and what each script is for.
-- [ ] Task 269: Document that the user/team must run `npm install` manually.
-- [ ] Task 270: Document that the user/team must run Prisma CLI commands manually.
-- [ ] Task 271: Document that the app does not run migrations on startup.
-- [ ] Task 272: Document local XAMPP MySQL expectations: host `localhost`, port `3306`, database `cloudcms`, charset `utf8mb4`, and engine `InnoDB`.
-- [ ] Task 273: Document the required `.env` values.
-- [ ] Task 274: Document `JSON_BODY_LIMIT=1mb` and why file uploads should not use normal JSON body endpoints.
-- [ ] Task 275: Document the default Token Bucket values and meaning.
-- [ ] Task 276: Document the recommended rate-limit overrides for auth login, tenant registration, computer registration, heartbeat, and asset upload.
-- [ ] Task 277: Document the health endpoints and expected response shapes.
-- [ ] Task 278: Document the standard success response shape.
-- [ ] Task 279: Document the standard error response shape.
-- [ ] Task 280: Document that production error responses must not expose stack traces.
-- [ ] Task 281: Document that logs must not include secrets or raw tokens.
+- [x] Task 266: Create or update `backend/README.md` with Foundation setup notes.
+- [x] Task 267: Document the backend folder structure and key file responsibilities.
+- [x] Task 268: Document npm scripts and what each script is for.
+- [x] Task 269: Document that the user/team must run `npm install` manually.
+- [x] Task 270: Document that the user/team must run Prisma CLI commands manually.
+- [x] Task 271: Document that the app does not run migrations on startup.
+- [x] Task 272: Document local XAMPP MySQL expectations: host `localhost`, port `3306`, database `cloudcms`, charset `utf8mb4`, and engine `InnoDB`.
+- [x] Task 273: Document the required `.env` values.
+- [x] Task 274: Document `JSON_BODY_LIMIT=1mb` and why file uploads should not use normal JSON body endpoints.
+- [x] Task 275: Document the default Token Bucket values and meaning.
+- [x] Task 276: Document the recommended rate-limit overrides for auth login, tenant registration, computer registration, heartbeat, and asset upload.
+- [x] Task 277: Document the health endpoints and expected response shapes.
+- [x] Task 278: Document the standard success response shape.
+- [x] Task 279: Document the standard error response shape.
+- [x] Task 280: Document that production error responses must not expose stack traces.
+- [x] Task 281: Document that logs must not include secrets or raw tokens.
 
 ## 17. Final Review and Verification
 
 - [ ] Task 282: Verify the final `backend/` source tree matches the TDD target structure.
 - [ ] Task 283: Verify `backend/package.json` uses npm scripts and contains the approved dependencies.
-- [ ] Task 284: Verify `backend/tsconfig.json` targets Node.js 22-compatible output.
-- [ ] Task 285: Verify `backend/vitest.config.ts` is present.
-- [ ] Task 286: Verify `backend/.env.example` contains all approved Foundation env variables.
-- [ ] Task 287: Verify no real `.env` file is committed.
+- [x] Task 284: Verify `backend/tsconfig.json` targets Node.js 22-compatible output.
+- [x] Task 285: Verify `backend/vitest.config.ts` is present.
+- [x] Task 286: Verify `backend/.env.example` contains all approved Foundation env variables.
+- [x] Task 287: Verify no real `.env` file is committed.
 - [ ] Task 288: Verify no secret value appears in docs, config examples, tests, or logs.
-- [ ] Task 289: Verify Prisma datasource provider is `mysql`.
-- [ ] Task 290: Verify app startup does not run Prisma CLI, migrations, seed scripts, DB creation, or server-side DB setup.
-- [ ] Task 291: Verify `/health` does not access MySQL.
-- [ ] Task 292: Verify `/api/health/db` uses a lightweight `SELECT 1`-style query.
-- [ ] Task 293: Verify `/api/health/runtime` returns only safe runtime metadata.
-- [ ] Task 294: Verify all success responses follow `{ success: true, data: ... }`.
-- [ ] Task 295: Verify all error responses follow `{ success: false, error: { code, message, details } }`.
-- [ ] Task 296: Verify every request has a request ID.
-- [ ] Task 297: Verify request logs include request ID, method, path, status code, and latency.
-- [ ] Task 298: Verify log redaction prevents secrets and raw tokens from being logged.
-- [ ] Task 299: Verify validation failures return `VALIDATION_ERROR`.
+- [x] Task 289: Verify Prisma datasource provider is `mysql`.
+- [x] Task 290: Verify app startup does not run Prisma CLI, migrations, seed scripts, DB creation, or server-side DB setup.
+- [x] Task 291: Verify `/health` does not access MySQL.
+- [x] Task 292: Verify `/api/health/db` uses a lightweight `SELECT 1`-style query.
+- [x] Task 293: Verify `/api/health/runtime` returns only safe runtime metadata.
+- [x] Task 294: Verify all success responses follow `{ success: true, data: ... }`.
+- [x] Task 295: Verify all error responses follow `{ success: false, error: { code, message, details } }`.
+- [x] Task 296: Verify every request has a request ID.
+- [x] Task 297: Verify request logs include request ID, method, path, status code, and latency.
+- [x] Task 298: Verify log redaction prevents secrets and raw tokens from being logged.
+- [x] Task 299: Verify validation failures return `VALIDATION_ERROR`.
 - [ ] Task 300: Verify rate-limit failures return `RATE_LIMITED`.
-- [ ] Task 301: Verify DB health failures return `DATABASE_ERROR`.
-- [ ] Task 302: Verify unknown routes return `NOT_FOUND`.
-- [ ] Task 303: Verify production-mode errors do not expose stack traces.
-- [ ] Task 304: Verify test coverage includes env config, errors, validation, Token Bucket, health routes, and request ID behavior.
-- [ ] Task 305: Ask the user/team to run dependency install and tests when they are ready.
-- [ ] Task 306: Record any test failures or environment blockers in the task file before marking Foundation complete.
+- [x] Task 301: Verify DB health failures return `DATABASE_ERROR`.
+- [x] Task 302: Verify unknown routes return `NOT_FOUND`.
+- [x] Task 303: Verify production-mode errors do not expose stack traces.
+- [x] Task 304: Verify test coverage includes env config, errors, validation, Token Bucket, health routes, and request ID behavior.
+- [x] Task 305: Ask the user/team to run dependency install and tests when they are ready.
+- [x] Task 306: Record any test failures or environment blockers in the task file before marking Foundation complete.
+
+
+
+

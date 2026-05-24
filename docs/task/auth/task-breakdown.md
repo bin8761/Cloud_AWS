@@ -1,4 +1,4 @@
-﻿# Task Breakdown: CloudCMS Auth Module
+# Task Breakdown: CloudCMS Auth Module
 
 Source TDD: `docs/tdd/auth/technical-design.md`
 
@@ -449,12 +449,12 @@ Implementation constraints:
 
 ## 28. Documentation and Operations
 
-- [ ] Task 347: Update local setup documentation with required Auth env variables.
-- [ ] Task 348: Document that real SMTP values must be placed in local `.env` and not committed.
-- [ ] Task 349: Document manual Prisma migration and generate steps for the user/team.
-- [ ] Task 350: Document manual verification steps from the Auth TDD.
-- [ ] Task 351: Document that Redis rate-limit store is out of scope for Auth MVP.
-- [ ] Task 352: Document frontend handoff notes for registration, verification, login, token refresh, logout, and `me`.
+- [x] Task 347: Update local setup documentation with required Auth env variables.
+- [x] Task 348: Document that real SMTP values must be placed in local `.env` and not committed.
+- [x] Task 349: Document manual Prisma migration and generate steps for the user/team.
+- [x] Task 350: Document manual verification steps from the Auth TDD.
+- [x] Task 351: Document that Redis rate-limit store is out of scope for Auth MVP.
+- [x] Task 352: Document frontend handoff notes for registration, verification, login, token refresh, logout, and `me`.
 
 ## 29. Manual Verification
 
@@ -484,3 +484,4 @@ Implementation constraints:
 - [ ] Task 373: Verify route-controller-service structure matches the existing Health module pattern.
 - [ ] Task 374: Verify implementation does not run migrations or Prisma CLI during app startup.
 - [ ] Task 375: Verify `docs/tdd/auth/technical-design.md` remains aligned with implemented behavior.
+

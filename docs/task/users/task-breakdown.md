@@ -1,4 +1,4 @@
-﻿# Task Breakdown: CloudCMS Users Module
+# Task Breakdown: CloudCMS Users Module
 
 Source TDD: `docs/tdd/users/2026-05-22-users-technical-design.md`
 
@@ -392,22 +392,22 @@ Implementation notes:
 
 **Contract, Documentation, and Manual Verification**
 
-- [ ] Task 295: Document the Users response contract for `POST /api/users`.
-- [ ] Task 296: Document the Users response contract for `GET /api/users`.
-- [ ] Task 297: Document the Users response contract for `GET /api/users/:id`.
-- [ ] Task 298: Document the Users response contract for `PATCH /api/users/:id`.
-- [ ] Task 299: Document that Web Admin UI work is outside this TDD.
-- [ ] Task 300: Document that staff self-profile remains handled by `GET /api/auth/me`.
-- [ ] Task 301: Document that no Users-specific environment variables are required.
-- [ ] Task 302: Document that no Users-specific health endpoint is added.
-- [ ] Task 303: Document that staff invite email, formal audit persistence, forced password change, and future rate limiting remain future decisions.
-- [ ] Task 304: Prepare manual verification steps for user/team-run backend startup and token acquisition.
-- [ ] Task 305: Prepare manual verification steps for `POST /api/users` as `shop_admin`.
-- [ ] Task 306: Prepare manual verification steps for `GET /api/users` pagination and filters.
-- [ ] Task 307: Prepare manual verification steps for `GET /api/users/:id` staff detail.
-- [ ] Task 308: Prepare manual verification steps for `PATCH /api/users/:id` `fullName`, `status`, and password reset.
-- [ ] Task 309: Prepare manual verification steps confirming `staff` cannot access `/api/users`.
-- [ ] Task 310: Prepare manual verification steps confirming `super_admin` cannot access `/api/users` in MVP.
-- [ ] Task 311: Prepare manual verification steps confirming disabled staff cannot login, refresh, or use `GET /api/auth/me`.
-- [ ] Task 312: Ask the user/team to run the Users unit, service, API, typecheck, and manual verification commands when implementation is complete.
+- [x] Task 295: Document the Users response contract for `POST /api/users`.
+- [x] Task 296: Document the Users response contract for `GET /api/users`.
+- [x] Task 297: Document the Users response contract for `GET /api/users/:id`.
+- [x] Task 298: Document the Users response contract for `PATCH /api/users/:id`.
+- [x] Task 299: Document that Web Admin UI work is outside this TDD.
+- [x] Task 300: Document that staff self-profile remains handled by `GET /api/auth/me`.
+- [x] Task 301: Document that no Users-specific environment variables are required.
+- [x] Task 302: Document that no Users-specific health endpoint is added.
+- [x] Task 303: Document that staff invite email, formal audit persistence, forced password change, and future rate limiting remain future decisions.
+- [x] Task 304: Prepare manual verification steps for user/team-run backend startup and token acquisition.
+- [x] Task 305: Prepare manual verification steps for `POST /api/users` as `shop_admin`.
+- [x] Task 306: Prepare manual verification steps for `GET /api/users` pagination and filters.
+- [x] Task 307: Prepare manual verification steps for `GET /api/users/:id` staff detail.
+- [x] Task 308: Prepare manual verification steps for `PATCH /api/users/:id` `fullName`, `status`, and password reset.
+- [x] Task 309: Prepare manual verification steps confirming `staff` cannot access `/api/users`.
+- [x] Task 310: Prepare manual verification steps confirming `super_admin` cannot access `/api/users` in MVP.
+- [x] Task 311: Prepare manual verification steps confirming disabled staff cannot login, refresh, or use `GET /api/auth/me`.
+- [x] Task 312: Ask the user/team to run the Users unit, service, API, typecheck, and manual verification commands when implementation is complete.
  

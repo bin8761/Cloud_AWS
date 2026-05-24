@@ -55,6 +55,21 @@ const sanitizeErrorDetailsForProduction = (
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   const isProduction = process.env.NODE_ENV === "production";
 
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    "type" in err &&
+    (err as { type?: unknown }).type === "entity.too.large"
+  ) {
+    return res.status(413).json({
+      success: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Request payload too large",
+      },
+    });
+  }
+
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
       success: false,

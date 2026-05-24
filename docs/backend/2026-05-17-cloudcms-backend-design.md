@@ -78,21 +78,23 @@ Nguyên tắc thiết kế:
 
 Backend gồm một nền kỹ thuật chung và mười hai module nghiệp vụ/vận hành.
 
-| Phần | Loại | Trách nhiệm chính |
-| --- | --- | --- |
-| `foundation` | Shared technical foundation | Khởi tạo project, Express app, config/env, Prisma singleton, error handling, request ID, logging, validation helper, rate-limit helper, test setup, health tối thiểu. |
-| `auth` | Business module | Register tenant ban đầu, login, refresh token, logout, lấy current user. |
-| `tenants` | Business module | Quản lý tenant/quán, tenant code, trạng thái hoạt động, soft delete nếu cần. |
-| `users` | Business module | Quản lý shop admin/staff, role, khóa/mở user, danh sách user trong tenant. |
-| `computers` | Business module | Client đăng ký máy bằng tenant code + MAC, cấp device token, quản lý thông tin máy. |
-| `realtime` | Realtime module | Socket.IO auth, rooms theo tenant/computer, heartbeat, online/offline, emit events. |
-| `sessions` | Business module | Mở/đóng phiên sử dụng, chống double active session, gửi lệnh lock/unlock cho client. |
-| `usage` | Business module | Ghi usage, tổng hợp thống kê, dashboard query 7/30 ngày, `DailyUsageSummary`. |
-| `url-rules` | Business module | Luật chặn/cho phép URL theo tenant hoặc nhóm máy, publish policy update. |
-| `assets` | Integration module | Metadata lock-screen/slideshow, upload adapter local/S3, signed URL nếu cần. |
-| `subscriptions` | Business module | License/gói dịch vụ, hạn dùng, giới hạn số máy, cảnh báo hết hạn. |
-| `audit` | Cross-cutting module | Ghi log thao tác quan trọng: login, tạo user, start/stop session, đổi license, upload asset. |
-| `health` | Operations module | Liveness, DB health, runtime metrics như memory, uptime, active socket count. |
+
+| Phần            | Loại                        | Trách nhiệm chính                                                                                                                                                     |
+| --------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `foundation`    | Shared technical foundation | Khởi tạo project, Express app, config/env, Prisma singleton, error handling, request ID, logging, validation helper, rate-limit helper, test setup, health tối thiểu. |
+| `auth`          | Business module             | Register tenant ban đầu, login, refresh token, logout, lấy current user.                                                                                              |
+| `tenants`       | Business module             | Quản lý tenant/quán, tenant code, trạng thái hoạt động, soft delete nếu cần.                                                                                          |
+| `users`         | Business module             | Quản lý shop admin/staff, role, khóa/mở user, danh sách user trong tenant.                                                                                            |
+| `computers`     | Business module             | Client đăng ký máy bằng tenant code + MAC, cấp device token, quản lý thông tin máy.                                                                                   |
+| `realtime`      | Realtime module             | Socket.IO auth, rooms theo tenant/computer, heartbeat, online/offline, emit events.                                                                                   |
+| `sessions`      | Business module             | Mở/đóng phiên sử dụng, chống double active session, gửi lệnh lock/unlock cho client.                                                                                  |
+| `usage`         | Business module             | Ghi usage, tổng hợp thống kê, dashboard query 7/30 ngày, `DailyUsageSummary`.                                                                                         |
+| `url-rules`     | Business module             | Luật chặn/cho phép URL theo tenant hoặc nhóm máy, publish policy update.                                                                                              |
+| `assets`        | Integration module          | Metadata lock-screen/slideshow, upload adapter local/S3, signed URL nếu cần.                                                                                          |
+| `subscriptions` | Business module             | License/gói dịch vụ, hạn dùng, giới hạn số máy, cảnh báo hết hạn.                                                                                                     |
+| `audit`         | Cross-cutting module        | Ghi log thao tác quan trọng: login, tạo user, start/stop session, đổi license, upload asset.                                                                          |
+| `health`        | Operations module           | Liveness, DB health, runtime metrics như memory, uptime, active socket count.                                                                                         |
+
 
 `foundation` có cấu trúc riêng:
 
@@ -145,20 +147,22 @@ Backend dùng MySQL + Prisma. Local development dùng XAMPP MySQL; AWS staging/p
 
 Entity chính:
 
-| Entity | Vai trò |
-| --- | --- |
-| `Tenant` | Quán/net shop, có `code`, `name`, `status`, `deletedAt`. |
-| `User` | Tài khoản admin/staff, thuộc tenant hoặc super admin toàn hệ thống. |
-| `RefreshToken` | Lưu refresh token đã hash, hỗ trợ logout/revoke. |
-| `Computer` | Máy trạm, `tenantId`, `macAddress`, `name`, `status`, `lastSeenAt`. |
-| `ComputerCredential` | Device token đã hash cho client PC sau khi đăng ký. |
-| `Session` | Phiên sử dụng máy, start/end time, trạng thái active/ended. |
-| `UsageLog` | Log usage chi tiết phục vụ thống kê/lịch sử. |
-| `DailyUsageSummary` | Bảng tổng hợp theo ngày để dashboard query nhanh. |
-| `UrlRule` | Luật chặn/cho phép URL theo tenant. |
-| `LockScreenAsset` | Metadata ảnh/slideshow, file thật nằm local/S3. |
-| `Subscription` | License/gói dịch vụ, hạn dùng, giới hạn số máy. |
-| `AuditLog` | Log thao tác quan trọng của admin/system. |
+
+| Entity               | Vai trò                                                             |
+| -------------------- | ------------------------------------------------------------------- |
+| `Tenant`             | Quán/net shop, có `code`, `name`, `status`, `deletedAt`.            |
+| `User`               | Tài khoản admin/staff, thuộc tenant hoặc super admin toàn hệ thống. |
+| `RefreshToken`       | Lưu refresh token đã hash, hỗ trợ logout/revoke.                    |
+| `Computer`           | Máy trạm, `tenantId`, `macAddress`, `name`, `status`, `lastSeenAt`. |
+| `ComputerCredential` | Device token đã hash cho client PC sau khi đăng ký.                 |
+| `Session`            | Phiên sử dụng máy, start/end time, trạng thái active/ended.         |
+| `UsageLog`           | Log usage chi tiết phục vụ thống kê/lịch sử.                        |
+| `DailyUsageSummary`  | Bảng tổng hợp theo ngày để dashboard query nhanh.                   |
+| `UrlRule`            | Luật chặn/cho phép URL theo tenant.                                 |
+| `LockScreenAsset`    | Metadata ảnh/slideshow, file thật nằm local/S3.                     |
+| `Subscription`       | License/gói dịch vụ, hạn dùng, giới hạn số máy.                     |
+| `AuditLog`           | Log thao tác quan trọng của admin/system.                           |
+
 
 Nguyên tắc bắt buộc:
 
@@ -208,18 +212,20 @@ Backend expose REST API dưới prefix `/api`. Socket.IO nằm trong module `rea
 
 ### REST API Groups
 
-| Group | Endpoint chính | Ghi chú |
-| --- | --- | --- |
-| `auth` | `POST /api/auth/register-tenant`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` | Auth/onboarding admin. |
-| `tenants` | `GET /api/tenants`, `GET /api/tenants/:id`, `PATCH /api/tenants/:id` | Super admin hoặc tenant admin tùy quyền. |
-| `users` | `POST /api/users`, `GET /api/users`, `PATCH /api/users/:id`, `DELETE /api/users/:id` | Quản lý staff trong tenant. |
-| `computers` | `POST /api/computers/register`, `GET /api/computers`, `GET /api/computers/:id`, `PATCH /api/computers/:id` | Register client và quản lý máy. |
-| `sessions` | `POST /api/sessions/start`, `POST /api/sessions/:id/end`, `GET /api/sessions` | Start/stop/lịch sử phiên. |
-| `usage` | `POST /api/usage/sync`, `GET /api/usage/summary`, `GET /api/usage/logs` | Client sync usage, admin xem stats. |
-| `url-rules` | `POST /api/url-rules`, `GET /api/url-rules`, `PATCH /api/url-rules/:id`, `DELETE /api/url-rules/:id` | Quản lý policy URL. |
-| `assets` | `POST /api/assets`, `GET /api/assets`, `DELETE /api/assets/:id` | Upload/list/delete lock-screen/slideshow. |
-| `subscriptions` | `GET /api/subscriptions/current`, `PATCH /api/subscriptions/:id` | License/gói dịch vụ. |
-| `health` | `GET /health`, `GET /api/health/db`, `GET /api/health/runtime` | Liveness, DB, runtime. |
+
+| Group           | Endpoint chính                                                                                                                  | Ghi chú                                   |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `auth`          | `POST /api/auth/register-tenant`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` | Auth/onboarding admin.                    |
+| `tenants`       | `GET /api/tenants`, `GET /api/tenants/:id`, `PATCH /api/tenants/:id`                                                            | Super admin hoặc tenant admin tùy quyền.  |
+| `users`         | `POST /api/users`, `GET /api/users`, `PATCH /api/users/:id`, `DELETE /api/users/:id`                                            | Quản lý staff trong tenant.               |
+| `computers`     | `POST /api/computers/register`, `GET /api/computers`, `GET /api/computers/:id`, `PATCH /api/computers/:id`                      | Register client và quản lý máy.           |
+| `sessions`      | `POST /api/sessions/start`, `POST /api/sessions/:id/end`, `GET /api/sessions`                                                   | Start/stop/lịch sử phiên.                 |
+| `usage`         | `POST /api/usage/sync`, `GET /api/usage/summary`, `GET /api/usage/logs`                                                         | Client sync usage, admin xem stats.       |
+| `url-rules`     | `POST /api/url-rules`, `GET /api/url-rules`, `PATCH /api/url-rules/:id`, `DELETE /api/url-rules/:id`                            | Quản lý policy URL.                       |
+| `assets`        | `POST /api/assets`, `GET /api/assets`, `DELETE /api/assets/:id`                                                                 | Upload/list/delete lock-screen/slideshow. |
+| `subscriptions` | `GET /api/subscriptions/current`, `PATCH /api/subscriptions/:id`                                                                | License/gói dịch vụ.                      |
+| `health`        | `GET /health`, `GET /api/health/db`, `GET /api/health/runtime`                                                                  | Liveness, DB, runtime.                    |
+
 
 API list phải có pagination:
 
@@ -388,17 +394,19 @@ Quy tắc:
 
 Dùng Token Bucket.
 
-| Nhóm | Bucket key | Capacity | Refill |
-| --- | --- | ---: | ---: |
-| Login | IP + email | 5 | 1 token / 3 phút |
-| Register tenant | IP | 3 | 1 token / 20 phút |
-| Refresh token | userId/sessionId | 30 | 1 token / 2 giây |
-| Register computer | IP + tenantCode | 20 | 1 token / 30 giây |
-| Upload asset | userId + tenantId | 10 | 1 token / 6 giây |
-| Admin API thường | userId + tenantId | 120 | 2 token / giây |
-| Health/public API | IP | 60 | 1 token / giây |
-| Socket heartbeat | computerId | 3 | 1 token / 10 giây |
-| Socket admin command | userId + tenantId | 60 | 1 token / giây |
+
+| Nhóm                 | Bucket key        | Capacity | Refill            |
+| -------------------- | ----------------- | -------- | ----------------- |
+| Login                | IP + email        | 5        | 1 token / 3 phút  |
+| Register tenant      | IP                | 3        | 1 token / 20 phút |
+| Refresh token        | userId/sessionId  | 30       | 1 token / 2 giây  |
+| Register computer    | IP + tenantCode   | 20       | 1 token / 30 giây |
+| Upload asset         | userId + tenantId | 10       | 1 token / 6 giây  |
+| Admin API thường     | userId + tenantId | 120      | 2 token / giây    |
+| Health/public API    | IP                | 60       | 1 token / giây    |
+| Socket heartbeat     | computerId        | 3        | 1 token / 10 giây |
+| Socket admin command | userId + tenantId | 60       | 1 token / giây    |
+
 
 Single EC2 dùng in-memory store được cho đồ án. Nếu scale nhiều instance thì chuyển sang Redis.
 
@@ -553,13 +561,15 @@ Backend không nên đợi xong hết mới test. Mỗi module phải có test c
 
 ### Testing Strategy
 
-| Nhóm test | Mục tiêu |
-| --- | --- |
-| Unit tests | Test service/helper riêng lẻ: token, password hash, rate limit, session rules. |
-| API tests | Dùng Supertest kiểm tra endpoint: auth, users, computers, sessions, usage. |
+
+| Nhóm test         | Mục tiêu                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| Unit tests        | Test service/helper riêng lẻ: token, password hash, rate limit, session rules.            |
+| API tests         | Dùng Supertest kiểm tra endpoint: auth, users, computers, sessions, usage.                |
 | Integration tests | Kiểm tra flow nhiều bước: register tenant -> login -> register computer -> start session. |
-| Realtime tests | Kiểm tra socket auth, heartbeat, online/offline, session event. |
-| Security tests | Kiểm tra tenant isolation, RBAC, invalid token, rate limit, device token. |
+| Realtime tests    | Kiểm tra socket auth, heartbeat, online/offline, session event.                           |
+| Security tests    | Kiểm tra tenant isolation, RBAC, invalid token, rate limit, device token.                 |
+
 
 Các test bắt buộc cho backend core:
 
@@ -648,3 +658,4 @@ task breakdown
 
 - Backend hiện được thiết kế theo hướng greenfield trong `backend/`. Nếu có source backend hiện hữu ở vị trí khác, cần map lại cấu trúc file trước khi viết implementation plan.
 - Cần quyết định bước tiếp theo là viết implementation plan tổng thể cho backend hay viết module-level TDD trước cho `foundation`.
+

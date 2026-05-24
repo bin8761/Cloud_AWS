@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const apiBaseUrl = process.env.API_BASE_URL ?? "http://127.0.0.1:3000";
 const liveApi = request(apiBaseUrl);
+const runLiveTests = process.env.RUN_AUTH_LIVE_TESTS === "true";
+const describeLive = runLiveTests ? describe : describe.skip;
 
 const createUniqueSuffix = (): string => {
   return `${Date.now()}_${Math.floor(Math.random() * 100_000)}`;
@@ -26,7 +28,7 @@ const assertErrorCode = (response: SupertestResponse, code: string): void => {
   expect(response.body.error.code).toBe(code);
 };
 
-describe.sequential("Auth API live integration tests (real server)", () => {
+describeLive.sequential("Auth API live integration tests (real server)", () => {
   it("LIVE-01: health endpoint is reachable", async () => {
     const response = await liveApi.get("/health");
 
@@ -81,4 +83,3 @@ describe.sequential("Auth API live integration tests (real server)", () => {
     expect(response.body.data).toEqual({ loggedOut: true });
   });
 });
-

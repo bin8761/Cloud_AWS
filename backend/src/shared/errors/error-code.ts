@@ -4,6 +4,6 @@ export type ErrorCode =
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "CONFLICT"
-  | "RATE_LIMITED"
+  | "TOO_MANY_REQUESTS"
   | "INTERNAL_ERROR"
   | "DATABASE_ERROR";

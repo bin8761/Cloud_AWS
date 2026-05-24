@@ -26,6 +26,12 @@ enum UserStatus {
   DISABLED
 }
 
+enum ComputerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
 enum VerificationTargetType {
   EMAIL
 }
@@ -35,15 +41,36 @@ enum VerificationPurpose {
 }
 
 model Tenant {
-  id        String       @id @default(uuid())
-  code      String       @unique
-  name      String
-  status    TenantStatus @default(ACTIVE)
-  deletedAt DateTime?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id                             String       @id @default(uuid())
+  code                           String       @unique
+  name                           String
+  computerRegistrationSecretHash String?
+  status                         TenantStatus @default(ACTIVE)
+  deletedAt                      DateTime?
+  createdAt                      DateTime     @default(now())
+  updatedAt                      DateTime     @updatedAt
 
-  users User[]
+  users     User[]
+  computers Computer[]
+}
+
+model Computer {
+  id       String @id @default(uuid())
+  tenantId String
+  name     String?
+  macAddress      String
+  deviceTokenHash String
+  status          ComputerStatus @default(ACTIVE)
+  lastSeenAt      DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, macAddress])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
 }
 
 model User {

@@ -96,7 +96,7 @@ export const createRateLimitMiddleware = (
 
       options.store.set(key, bucketState);
       next(
-        new AppError(429, "RATE_LIMITED", "Too many requests. Please try again later.", {
+        new AppError(429, "TOO_MANY_REQUESTS", "Too many requests. Please try again later.", {
           key,
         }),
       );
