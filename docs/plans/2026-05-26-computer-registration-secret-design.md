@@ -2,6 +2,8 @@
 
 Date: 2026-05-26
 
+Status: Approved in chat on 2026-05-26 after section-by-section review.
+
 ## Goal
 
 Make computer registration understandable and testable by provisioning a tenant-level `computerRegistrationSecret` during tenant onboarding and allowing the shop admin to reissue it if lost or compromised.
@@ -109,6 +111,26 @@ Tenant.computerRegistrationSecretHash
 ```
 
 Only the hash is stored. The plain secret cannot be recovered after the response is sent.
+
+No new table or Prisma field is required for the MVP. The existing nullable field remains valid:
+
+```prisma
+model Tenant {
+  id                             String
+  code                           String
+  name                           String
+  computerRegistrationSecretHash String?
+  status                         TenantStatus
+}
+```
+
+Approved storage rules:
+
+- During `POST /api/auth/register-tenant/verify`, generate a plain secret, hash it, and store the hash in `Tenant.computerRegistrationSecretHash`.
+- During reissue, generate a new plain secret, hash it, and overwrite `Tenant.computerRegistrationSecretHash`.
+- Overwriting the hash invalidates the previous plain secret immediately.
+- Do not persist the plain secret in any database table.
+- Do not add `computerRegistrationSecretCreatedAt`, `computerRegistrationSecretRotatedAt`, or a registration-secret audit table in this MVP.
 
 ## Error Handling
 

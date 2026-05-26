@@ -8,6 +8,8 @@
 
 **Tech Stack:** Node.js, Express, TypeScript, Prisma, Zod, Vitest/Supertest, existing auth RBAC middleware.
 
+**Approved Scope:** This plan follows the section-by-section design approved in chat on 2026-05-26. It must not add a new Prisma table or new Tenant fields for MVP. Plain `computerRegistrationSecret` may appear only in the tenant verification response and the reissue response.
+
 ---
 
 ### Task 1: Add Shared Computer Registration Secret Generator
@@ -147,6 +149,8 @@ data: {
 }
 ```
 
+Do not add any new Prisma model or field. Use the existing nullable `Tenant.computerRegistrationSecretHash` field.
+
 **Step 6: Run focused tests**
 
 Expected: PASS.
@@ -279,6 +283,8 @@ Test flow:
 **Step 2: Run test to verify it fails or passes**
 
 Expected: PASS if Task 3 implementation overwrites the hash correctly. If it fails, fix the service update filter.
+
+Also assert the old plain secret is not present in any returned tenant/computer DTO.
 
 **Step 3: Commit**
 
