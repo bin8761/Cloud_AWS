@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { authPasswordService } from "../../src/modules/auth/auth.password";
 import { mapComputerToResponse } from "../../src/modules/computers/computers.mapper";
 import {
   listComputersQuerySchema,
@@ -29,6 +30,81 @@ vi.mock("../../src/config/env", () => ({
 }));
 
 describe("Computers unit tests (Task 323-344)", () => {
+  it("Task 041: generateComputerRegistrationSecret is exported from computers.service", async () => {
+    const computersServiceModule = await import(
+      "../../src/modules/computers/computers.service"
+    );
+
+    expect(computersServiceModule).toHaveProperty("generateComputerRegistrationSecret");
+    expect(typeof computersServiceModule.generateComputerRegistrationSecret).toBe("function");
+  });
+
+  it("Task 042: generated computer registration secret matches required format", async () => {
+    const computersServiceModule = await import(
+      "../../src/modules/computers/computers.service"
+    );
+    const generateComputerRegistrationSecret =
+      computersServiceModule.generateComputerRegistrationSecret as () => string;
+
+    const generatedSecret = generateComputerRegistrationSecret();
+
+    expect(generatedSecret).toMatch(/^crs_live_[A-Za-z0-9_-]+$/);
+  });
+
+  it("Task 043: consecutive generated computer registration secrets are different", async () => {
+    const computersServiceModule = await import(
+      "../../src/modules/computers/computers.service"
+    );
+    const generateComputerRegistrationSecret =
+      computersServiceModule.generateComputerRegistrationSecret as () => string;
+
+    const firstGeneratedSecret = generateComputerRegistrationSecret();
+    const secondGeneratedSecret = generateComputerRegistrationSecret();
+
+    expect(firstGeneratedSecret).not.toBe(secondGeneratedSecret);
+    expect(firstGeneratedSecret).toMatch(/^crs_live_[A-Za-z0-9_-]+$/);
+    expect(secondGeneratedSecret).toMatch(/^crs_live_[A-Za-z0-9_-]+$/);
+  });
+
+  it("Task 044: generated computer registration secret contains no whitespace", async () => {
+    const computersServiceModule = await import(
+      "../../src/modules/computers/computers.service"
+    );
+    const generateComputerRegistrationSecret =
+      computersServiceModule.generateComputerRegistrationSecret as () => string;
+
+    const generatedSecret = generateComputerRegistrationSecret();
+
+    expect(/\s/.test(generatedSecret)).toBe(false);
+  });
+
+  it("Task 048: hashRegistrationSecret output verifies through compare behavior", async () => {
+    const plainRegistrationSecret = "registration-secret-for-test";
+    const mockedHashPassword = vi.mocked(authPasswordService.hashPassword);
+    const mockedComparePassword = vi.mocked(authPasswordService.comparePassword);
+
+    mockedHashPassword.mockResolvedValue("hashed_registration_secret_value");
+    mockedComparePassword.mockImplementation(
+      async (plainSecretInput, storedHashInput) =>
+        plainSecretInput === plainRegistrationSecret &&
+        storedHashInput === "hashed_registration_secret_value",
+    );
+
+    const { hashRegistrationSecret, compareRegistrationSecret } = await import(
+      "../../src/modules/computers/computers.service"
+    );
+
+    const hashedRegistrationSecret = await hashRegistrationSecret(plainRegistrationSecret);
+    const isVerified = await compareRegistrationSecret({
+      plainRegistrationSecret,
+      registrationSecretHash: hashedRegistrationSecret,
+    });
+
+    expect(hashedRegistrationSecret).toBeTruthy();
+    expect(hashedRegistrationSecret).not.toBe(plainRegistrationSecret);
+    expect(isVerified).toBe(true);
+  });
+
   it("Task 325: tenantCodeSchema trims and normalizes uppercase", () => {
     const parsed = tenantCodeSchema.parse("  cyber01  ");
 

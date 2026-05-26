@@ -21,9 +21,48 @@ export interface RuntimeHealthStatus {
     heapUsed: number;
     heapTotal: number;
   };
+  realtime?: RealtimeHealthSnapshot;
 }
 
+export interface RealtimeHealthSnapshot {
+  activeSockets: number;
+  onlineComputers: number;
+  adminSockets: number;
+  heartbeatAccepted: number;
+  heartbeatRateLimited: number;
+  authFailures: number;
+  heartbeatTimeouts: number;
+}
+
+export type RealtimeHealthProvider = () => RealtimeHealthSnapshot;
+
+const sanitizeRealtimeCounterValue = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.trunc(value));
+};
+
+const sanitizeRealtimeHealthSnapshot = (
+  snapshot: RealtimeHealthSnapshot
+): RealtimeHealthSnapshot => ({
+  activeSockets: sanitizeRealtimeCounterValue(snapshot.activeSockets),
+  onlineComputers: sanitizeRealtimeCounterValue(snapshot.onlineComputers),
+  adminSockets: sanitizeRealtimeCounterValue(snapshot.adminSockets),
+  heartbeatAccepted: sanitizeRealtimeCounterValue(snapshot.heartbeatAccepted),
+  heartbeatRateLimited: sanitizeRealtimeCounterValue(snapshot.heartbeatRateLimited),
+  authFailures: sanitizeRealtimeCounterValue(snapshot.authFailures),
+  heartbeatTimeouts: sanitizeRealtimeCounterValue(snapshot.heartbeatTimeouts),
+});
+
 export class HealthService {
+  private realtimeHealthProvider?: RealtimeHealthProvider;
+
+  public setRealtimeHealthProvider(provider: RealtimeHealthProvider): void {
+    this.realtimeHealthProvider = provider;
+  }
+
   public getAppHealth(): AppHealthStatus {
     return {
       status: "ok",
@@ -47,8 +86,7 @@ export class HealthService {
 
   public getRuntimeHealth(): RuntimeHealthStatus {
     const memoryUsage = process.memoryUsage();
-
-    return {
+    const runtimeHealth: RuntimeHealthStatus = {
       status: "ok",
       environment: env.app.nodeEnv,
       nodeVersion: process.version,
@@ -59,6 +97,16 @@ export class HealthService {
         heapTotal: memoryUsage.heapTotal,
       },
     };
+
+    if (!this.realtimeHealthProvider) {
+      return runtimeHealth;
+    }
+
+    runtimeHealth.realtime = sanitizeRealtimeHealthSnapshot(
+      this.realtimeHealthProvider()
+    );
+
+    return runtimeHealth;
   }
 }
 

@@ -23,9 +23,16 @@ import type {
 } from "./computers.types";
 
 const DEVICE_TOKEN_BYTES = 48;
+const COMPUTER_REGISTRATION_SECRET_BYTES = 32;
+const COMPUTER_REGISTRATION_SECRET_PREFIX = "crs_live_";
 
 export const generateDeviceToken = (): string =>
   randomBytes(DEVICE_TOKEN_BYTES).toString("base64url");
+
+export const generateComputerRegistrationSecret = (): string =>
+  `${COMPUTER_REGISTRATION_SECRET_PREFIX}${randomBytes(
+    COMPUTER_REGISTRATION_SECRET_BYTES,
+  ).toString("base64url")}`;
 
 export const hashDeviceToken = (deviceToken: string): string =>
   createHmac("sha256", env.computers.deviceTokenHashSecret)

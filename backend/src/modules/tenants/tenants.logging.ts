@@ -5,6 +5,8 @@ type TenantsLogLevel = "info" | "warn" | "error";
 export const TENANTS_LOG_EVENTS = {
   TENANT_NAME_UPDATED: "tenant.name.updated",
   TENANT_STATUS_UPDATED: "tenant.status.updated",
+  COMPUTER_REGISTRATION_SECRET_REISSUED:
+    "tenant.computer_registration_secret.reissued",
   CURRENT_TENANT_READ: "current_tenant_read",
   CURRENT_TENANT_UPDATED: "current_tenant_updated",
   TENANT_LIST_READ: "tenant_list_read",
@@ -27,6 +29,8 @@ type ForbiddenTenantsLogBodyFields = {
   token?: never;
   accessToken?: never;
   refreshToken?: never;
+  deviceToken?: never;
+  deviceTokenHash?: never;
   bearerToken?: never;
   cookie?: never;
   setCookie?: never;
@@ -46,7 +50,7 @@ export type TenantsEventLogInput = {
   status?: string;
   oldStatus?: string;
   newStatus?: string;
-  reason?: string;
+  reasonLength?: number;
   ip?: string;
   userAgent?: string;
 } & ForbiddenTenantsLogBodyFields;
@@ -69,6 +73,16 @@ export type TenantStatusUpdatedLogInput = {
   newStatus: string;
 } & ForbiddenTenantsLogBodyFields;
 
+export type ComputerRegistrationSecretReissuedLogInput = {
+  requestId?: string;
+  actorUserId?: string;
+  actorRole?: string;
+  actorTenantId?: string | null;
+  targetTenantId: string;
+  status?: string;
+  reasonLength?: number;
+} & ForbiddenTenantsLogBodyFields;
+
 const rawBodyFieldKeys = ["body", "req", "requestBody", "rawBody"] as const;
 const rawHeaderFieldKeys = [
   "headers",
@@ -80,6 +94,8 @@ const tokenFieldKeys = [
   "token",
   "accessToken",
   "refreshToken",
+  "deviceToken",
+  "deviceTokenHash",
   "bearerToken",
   "cookie",
   "setCookie",
@@ -117,6 +133,24 @@ export class TenantsLoggingService {
     });
   }
 
+  public logComputerRegistrationSecretReissued(
+    input: ComputerRegistrationSecretReissuedLogInput,
+  ): void {
+    this.logTenantsEvent({
+      requestId: input.requestId,
+      event: TENANTS_LOG_EVENTS.COMPUTER_REGISTRATION_SECRET_REISSUED,
+      actorUserId: input.actorUserId,
+      actorRole: input.actorRole,
+      actorTenantId: input.actorTenantId,
+      userId: input.actorUserId,
+      role: input.actorRole,
+      tenantId: input.actorTenantId,
+      targetTenantId: input.targetTenantId,
+      status: input.status,
+      reasonLength: input.reasonLength,
+    });
+  }
+
   public logTenantsEvent(input: TenantsEventLogInput): void {
     const actorUserId = input.actorUserId ?? input.userId;
     const actorRole = input.actorRole ?? input.role;
@@ -146,7 +180,7 @@ export class TenantsLoggingService {
       status: input.status,
       oldStatus: input.oldStatus,
       newStatus: input.newStatus,
-      reason: input.reason,
+      reasonLength: input.reasonLength,
       ip: input.ip,
       userAgent: input.userAgent,
       droppedRawRequestBody: hasRawBodyField || undefined,

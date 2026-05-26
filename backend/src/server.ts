@@ -1,12 +1,19 @@
-﻿import { app } from "./app";
+import { createServer } from "node:http";
+import { app } from "./app";
 import { env } from "./config/env";
+import { healthService } from "./modules/health/health.service";
+import { createRealtimeServer } from "./modules/realtime";
 import { logger } from "./shared/logging/logger";
 import { disconnectPrisma } from "./shared/prisma/prisma.client";
 
 const LOGGER_FLUSH_TIMEOUT_MS = 2000;
 let shutdownInProgress = false;
 
-export const server = app.listen(env.server.port, () => {
+export const httpServer = createServer(app);
+export const realtimeServer = createRealtimeServer(httpServer);
+healthService.setRealtimeHealthProvider(() => realtimeServer.getRealtimeHealthSnapshot());
+
+export const server = httpServer.listen(env.server.port, () => {
   logger.info(
     {
       environment: env.app.nodeEnv,
@@ -28,6 +35,10 @@ const closeHttpServer = (): Promise<void> =>
       resolve();
     });
   });
+
+const closeRealtimeServer = async (): Promise<void> => {
+  await realtimeServer.close();
+};
 
 const flushLogger = async (): Promise<void> => {
   const flush = (logger as { flush?: (() => void) | undefined }).flush;
@@ -61,6 +72,8 @@ const handleShutdownSignal = (signal: NodeJS.Signals): void => {
   void closeHttpServer()
     .then(async () => {
       logger.info({ signal }, "HTTP server closed");
+      await closeRealtimeServer();
+      logger.info({ signal }, "Realtime server closed");
       await disconnectPrisma();
       logger.info({ signal }, "Prisma disconnected");
       await flushLogger();

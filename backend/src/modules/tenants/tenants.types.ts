@@ -1,3 +1,6 @@
+import type { z } from "zod";
+import { reissueComputerRegistrationSecretSchema } from "./tenants.schema";
+
 export type TenantStatusDto = "ACTIVE" | "SUSPENDED";
 
 export type TenantDto = Readonly<{
@@ -42,6 +45,14 @@ export type UpdateCurrentTenantInput = {
 export type UpdateTenantByIdInput = {
   name?: string;
   status?: TenantStatusDto;
+};
+
+export type ReissueComputerRegistrationSecretInput = z.infer<
+  typeof reissueComputerRegistrationSecretSchema
+>;
+
+export type ReissueComputerRegistrationSecretOutput = {
+  computerRegistrationSecret: string;
 };
 
 type TenantMapperSource = {

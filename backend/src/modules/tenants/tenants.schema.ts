@@ -44,6 +44,12 @@ export const updateCurrentTenantSchema = z
   })
   .strict();
 
+export const reissueComputerRegistrationSecretSchema = z
+  .object({
+    reason: z.string().trim().max(200).optional(),
+  })
+  .strict();
+
 export const updateTenantByIdSchema = z
   .object({
     name: tenantNameSchema.optional(),
@@ -66,6 +72,7 @@ export const tenantsRouteSchemas = {
   tenantStatusSchema,
   tenantIdParamsSchema,
   updateCurrentTenantSchema,
+  reissueComputerRegistrationSecretSchema,
   updateTenantByIdSchema,
   listTenantsQuerySchema,
 } as const;

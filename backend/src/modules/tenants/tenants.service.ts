@@ -1,4 +1,8 @@
 import type { AuthRole } from "../auth/auth.types";
+import {
+  generateComputerRegistrationSecret,
+  hashRegistrationSecret,
+} from "../computers/computers.service";
 import { AppError } from "../../shared/errors/app-error";
 import { prisma } from "../../shared/prisma/prisma.client";
 import { tenantsLoggingService } from "./tenants.logging";
@@ -8,6 +12,8 @@ import type {
   GetTenantByIdOutput,
   ListTenantsInput,
   ListTenantsOutput,
+  ReissueComputerRegistrationSecretInput,
+  ReissueComputerRegistrationSecretOutput,
   UpdateCurrentTenantInput,
   UpdateCurrentTenantOutput,
   UpdateTenantByIdInput,
@@ -114,6 +120,21 @@ const normalizeTenantListSearchQuery = (
 
   const MAX_QUERY_LENGTH = 100;
   return normalizedValue.slice(0, MAX_QUERY_LENGTH);
+};
+
+const normalizeOptionalReasonForLogMetadata = (
+  value: string | undefined,
+): string | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalizedValue = value.trim();
+  if (normalizedValue.length === 0) {
+    return undefined;
+  }
+
+  return normalizedValue;
 };
 
 export class TenantsService {
@@ -341,6 +362,45 @@ export class TenantsService {
     }
 
     return mapUpdateTenantByIdOutput(updatedTenant);
+  }
+
+  public async reissueComputerRegistrationSecret(
+    authContext: TenantsAuthContext | undefined,
+    input: ReissueComputerRegistrationSecretInput,
+  ): Promise<ReissueComputerRegistrationSecretOutput> {
+    const tenantId = assertTenantIdFromAuthContext(authContext);
+    const normalizedReason = normalizeOptionalReasonForLogMetadata(input.reason);
+    const reasonLength = normalizedReason?.length;
+    const computerRegistrationSecret = generateComputerRegistrationSecret();
+    const computerRegistrationSecretHash = await hashRegistrationSecret(
+      computerRegistrationSecret,
+    );
+    const updateResult = await prisma.tenant.updateMany({
+      where: {
+        ...createBaseTenantWhere(),
+        id: tenantId,
+      },
+      data: {
+        computerRegistrationSecretHash,
+      },
+    });
+    if (updateResult.count === 0) {
+      throw createNotFoundTenantError();
+    }
+
+    tenantsLoggingService.logComputerRegistrationSecretReissued({
+      ...(authContext?.requestId === undefined
+        ? {}
+        : { requestId: authContext.requestId }),
+      actorUserId: authContext?.userId,
+      actorRole: authContext?.role,
+      actorTenantId: authContext?.tenantId ?? null,
+      targetTenantId: tenantId,
+      status: "success",
+      reasonLength,
+    });
+
+    return { computerRegistrationSecret };
   }
 }
 
