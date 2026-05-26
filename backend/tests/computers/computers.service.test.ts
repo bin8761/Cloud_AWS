@@ -9,6 +9,7 @@ const {
   prismaComputerFindManyMock,
   prismaComputerUpdateManyMock,
   prismaComputerUpdateMock,
+  prismaSubscriptionFindUniqueMock,
   logComputerRegisteredMock,
   logComputerRegisterFailedMock,
   logComputerRegisterConflictMock,
@@ -20,6 +21,13 @@ const {
   prismaComputerFindManyMock: vi.fn(),
   prismaComputerUpdateManyMock: vi.fn(),
   prismaComputerUpdateMock: vi.fn(),
+  prismaSubscriptionFindUniqueMock: vi.fn(async () => ({
+    id: "sub_1",
+    tenantId: "tenant_1",
+    status: "ACTIVE",
+    maxComputers: 100,
+    expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+  })),
   logComputerRegisteredMock: vi.fn(),
   logComputerRegisterFailedMock: vi.fn(),
   logComputerRegisterConflictMock: vi.fn(),
@@ -55,6 +63,9 @@ vi.mock("../../src/shared/prisma/prisma.client", () => ({
       findMany: prismaComputerFindManyMock,
       updateMany: prismaComputerUpdateManyMock,
       update: prismaComputerUpdateMock,
+    },
+    subscription: {
+      findUnique: prismaSubscriptionFindUniqueMock,
     },
   },
 }));
@@ -105,6 +116,9 @@ const createService = (verifyResult: boolean) =>
         findMany: prismaComputerFindManyMock,
         updateMany: prismaComputerUpdateManyMock,
         update: prismaComputerUpdateMock,
+      },
+      subscription: {
+        findUnique: prismaSubscriptionFindUniqueMock,
       },
     } as never,
     {

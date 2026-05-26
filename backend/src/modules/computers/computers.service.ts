@@ -115,6 +115,34 @@ export class ComputersService {
       requestContext,
     });
 
+    const sub = await this.prismaClient.subscription.findUnique({
+      where: { tenantId: tenant.id },
+    });
+
+    if (!sub) {
+      throw new AppError(402, "PAYMENT_REQUIRED", "No active subscription found for this tenant.");
+    }
+
+    if (sub.status !== "ACTIVE") {
+      throw new AppError(402, "PAYMENT_REQUIRED", `Tenant subscription status is ${sub.status}.`);
+    }
+
+    if (sub.expiresAt < new Date()) {
+      throw new AppError(402, "PAYMENT_REQUIRED", "Tenant subscription has expired.");
+    }
+
+    const currentCount = await this.prismaClient.computer.count({
+      where: { tenantId: tenant.id },
+    });
+
+    if (currentCount >= sub.maxComputers) {
+      throw new AppError(
+        403,
+        "FORBIDDEN",
+        "Maximum computer limit reached for this tenant's subscription.",
+      );
+    }
+
     const normalizedMacAddress = normalizeMacAddress(input.macAddress);
     await this.assertComputerMacAddressAvailable({
       tenantId: tenant.id,
