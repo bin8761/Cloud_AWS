@@ -197,4 +197,57 @@ describe("Assets API tests (Person 5)", () => {
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
   });
+
+  it("shop_admin can upload image with valid extension and mimetype", async () => {
+    const token = await buildAccessToken({ role: "shop_admin", tenantId });
+    const mockAsset = {
+      id: assetId,
+      tenantId,
+      fileName: "test.png",
+      filePath: "uploads/lockscreen/tenant_1_123.png",
+      fileSize: 15,
+      mimeType: "image/png",
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    (prismaMock.lockScreenAsset.create as any).mockResolvedValueOnce(mockAsset);
+
+    const response = await request(app)
+      .post("/api/assets/upload")
+      .set("Authorization", `Bearer ${token}`)
+      .attach("image", Buffer.from("fake image content"), "test.png");
+
+    expect(response.status).toBe(201);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.fileName).toBe("test.png");
+  });
+
+  it("shop_admin cannot upload file with invalid mimetype", async () => {
+    const token = await buildAccessToken({ role: "shop_admin", tenantId });
+
+    const response = await request(app)
+      .post("/api/assets/upload")
+      .set("Authorization", `Bearer ${token}`)
+      .attach("image", Buffer.from("fake text content"), "test.txt");
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
+
+  it("shop_admin cannot upload file with spoofed mimetype but invalid extension", async () => {
+    const token = await buildAccessToken({ role: "shop_admin", tenantId });
+
+    const response = await request(app)
+      .post("/api/assets/upload")
+      .set("Authorization", `Bearer ${token}`)
+      .attach("image", Buffer.from("fake html content"), {
+        filename: "test.html",
+        contentType: "image/png",
+      } as any);
+
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
 });
+

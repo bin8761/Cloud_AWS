@@ -1,4 +1,4 @@
-﻿# Foundation backend ignores
+# Foundation backend ignores
 backend/.env
 backend/.env.*
 !backend/.env.example
@@ -12,6 +12,10 @@ backend/dist/
 # Test coverage
 backend/coverage/
 backend/.nyc_output/
+
+# Uploads
+backend/public/uploads/lockscreen/*
+!backend/public/uploads/lockscreen/.gitkeep
 
 rule
 CONTINUITY.md

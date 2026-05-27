@@ -31,7 +31,10 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedMimeTypes = ["image/jpeg", "image/png"];
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  const allowedExtensions = [".jpg", ".jpeg", ".png"];
+  const extension = path.extname(file.originalname).toLowerCase();
+
+  if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(extension)) {
     cb(null, true);
   } else {
     cb(new AppError(400, "BAD_REQUEST", "Only JPG and PNG images are allowed."));

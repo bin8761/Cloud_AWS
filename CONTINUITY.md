@@ -35,14 +35,17 @@
 - Created integration tests in `backend/tests/assets/assets.api.test.ts` and `backend/tests/subscriptions/subscriptions.api.test.ts`.
 - Khắc phục các lỗi linter/typecheck của TypeScript trong hai file test mới: cấu hình import đường dẫn tương đối có đuôi mở rộng `.js` (ESM moduleResolution rules) và ép kiểu các prisma mock functions.
 - Chạy `npm test` thành công và toàn bộ 403 test cases (bao gồm các test case cho Assets và Subscriptions) đều chuyển sang màu xanh (Green).
+- Thực hiện rà soát bảo mật toàn diện các tính năng của Người số 5 (Person 5), phát hiện và sửa đổi lỗ hổng Arbitrary File Upload (Stored XSS) trong `upload.middleware.ts`.
+- Bổ sung 3 test cases kiểm thử bảo mật file upload trong `assets.api.test.ts` và chạy thành công (tổng cộng 406 test cases green).
+- Viết báo cáo Security Audit chi tiết lưu tại file artifact.
 
 ### Now
 
-- Hoàn thiện toàn bộ yêu cầu của Người số 5 thành công và sửa toàn bộ lỗi TypeScript linter trong các file chỉnh sửa/tạo mới.
+- Kế hoạch Giao diện (UI Plan) đã được phê duyệt. Chuẩn bị khởi tạo và thiết lập dự án `web-admin` dùng React, Vite và TypeScript.
 
 ### Next
 
-- Bàn giao công việc và kế hoạch tiếp theo cho người dùng.
+- Khởi tạo thư mục `web-admin` và xây dựng các trang quản lý ảnh màn hình khóa, bản quyền theo thiết kế.
 
 ## Open questions
 
