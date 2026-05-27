@@ -12,6 +12,10 @@ import { type EmailSender } from "../../shared/email/email-sender";
 import { createEmailSender } from "../../shared/email/email-sender.factory";
 import { prisma } from "../../shared/prisma/prisma.client";
 import {
+  generateComputerRegistrationSecret,
+  hashRegistrationSecret,
+} from "../computers/computers.service";
+import {
   AUTH_LOG_EVENTS,
   authLoggingService,
   type AuthLoggingService,
@@ -331,11 +335,16 @@ export class AuthService {
 
       await this.assertTenantCodeAvailable(pendingRegistration.tenantCode);
       await this.assertAdminEmailAvailable(pendingRegistration.adminEmail);
+      const computerRegistrationSecret = generateComputerRegistrationSecret();
+      const computerRegistrationSecretHash = await hashRegistrationSecret(
+        computerRegistrationSecret,
+      );
 
       const createdTenant =
         await this.createActiveTenantInVerificationTransaction({
           tenantCode: pendingRegistration.tenantCode,
           tenantName: pendingRegistration.tenantName,
+          computerRegistrationSecretHash,
         });
       const createdUser =
         await this.createActiveShopAdminInVerificationTransaction({
@@ -404,6 +413,7 @@ export class AuthService {
         },
         accessToken,
         refreshToken: rawRefreshToken,
+        computerRegistrationSecret,
       };
     } catch (error) {
       if (error instanceof AppError) {
@@ -1120,6 +1130,7 @@ export class AuthService {
   private async createActiveTenantInVerificationTransaction(input: {
     tenantCode: string;
     tenantName: string;
+    computerRegistrationSecretHash: string;
   }): Promise<{
     id: string;
     code: string;
@@ -1132,6 +1143,7 @@ export class AuthService {
           code: input.tenantCode,
           name: input.tenantName,
           status: TenantStatus.ACTIVE,
+          computerRegistrationSecretHash: input.computerRegistrationSecretHash,
         },
         select: {
           id: true,

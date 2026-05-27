@@ -43,6 +43,7 @@ export type VerifyRegisterTenantInput = {
 export type VerifyRegisterTenantOutput = {
   tenant: AuthTenantDto;
   user: AuthUserDto;
+  computerRegistrationSecret: string;
 } & AuthTokenPairDto;
 
 export type LoginInput = {

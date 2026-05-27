@@ -1,0 +1,22 @@
+/**
+ * Realtime event names.
+ */
+export const REALTIME_ADMIN_WATCH_TENANT_EVENT = "admin:watch-tenant" as const;
+export const REALTIME_CLIENT_HEARTBEAT_EVENT = "client:heartbeat" as const;
+export const REALTIME_COMPUTER_ONLINE_EVENT = "computer:online" as const;
+export const REALTIME_COMPUTER_OFFLINE_EVENT = "computer:offline" as const;
+
+export const REALTIME_EVENT_NAMES = {
+    ADMIN_WATCH_TENANT: REALTIME_ADMIN_WATCH_TENANT_EVENT,
+    CLIENT_HEARTBEAT: REALTIME_CLIENT_HEARTBEAT_EVENT,
+    COMPUTER_ONLINE: REALTIME_COMPUTER_ONLINE_EVENT,
+    COMPUTER_OFFLINE: REALTIME_COMPUTER_OFFLINE_EVENT,
+} as const;
+
+// MVP tuning stays module-local constants (not env-backed).
+export const REALTIME_HEARTBEAT_RATE_LIMIT_CAPACITY = 3;
+export const REALTIME_HEARTBEAT_RATE_LIMIT_REFILL_TOKENS = 1;
+export const REALTIME_HEARTBEAT_RATE_LIMIT_REFILL_WINDOW_SECONDS = 10;
+export const REALTIME_HEARTBEAT_TIMEOUT_SECONDS = 90;
+export const REALTIME_LAST_SEEN_UPDATE_THROTTLE_SECONDS = 30;
+

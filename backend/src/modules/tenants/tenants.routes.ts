@@ -5,6 +5,7 @@ import { requireRole, requireTenantUser } from "../auth/auth.rbac";
 import { tenantsController } from "./tenants.controller";
 import {
   listTenantsQuerySchema,
+  reissueComputerRegistrationSecretSchema,
   tenantIdParamsSchema,
   updateCurrentTenantSchema,
   updateTenantByIdSchema,
@@ -42,6 +43,22 @@ tenantsRouter.get(
   requireRole("super_admin"),
   (request, response, next) =>
     void tenantsController.listTenants(request, response, next),
+);
+
+tenantsRouter.post(
+  "/me/computer-registration-secret/reissue",
+  authRequired,
+  validateRequest({
+    body: reissueComputerRegistrationSecretSchema,
+  }),
+  requireRole("shop_admin"),
+  requireTenantUser,
+  (request, response, next) =>
+    void tenantsController.reissueComputerRegistrationSecret(
+      request,
+      response,
+      next,
+    ),
 );
 
 tenantsRouter.get(

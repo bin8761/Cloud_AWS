@@ -4,6 +4,7 @@ import type { AuthContext } from "../../shared/middleware/auth-context";
 import { tenantsService } from "./tenants.service";
 import type {
   ListTenantsInput,
+  ReissueComputerRegistrationSecretInput,
   UpdateCurrentTenantInput,
   UpdateTenantByIdInput,
 } from "./tenants.types";
@@ -125,6 +126,32 @@ export class TenantsController {
           requestId: request.requestId,
         },
         tenantId,
+        validatedBody,
+      );
+
+      response.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async reissueComputerRegistrationSecret(
+    request: Request,
+    response: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const authContext = readAuthContextAfterAuthRequired(request);
+      const validatedBody =
+        request.body as ReissueComputerRegistrationSecretInput;
+      const data = await tenantsService.reissueComputerRegistrationSecret(
+        {
+          ...authContext,
+          requestId: request.requestId,
+        },
         validatedBody,
       );
 
