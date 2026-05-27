@@ -13,6 +13,8 @@ import { requestLogger } from "./shared/logging/request-logger";
 import { authContextMiddleware } from "./shared/middleware/auth-context";
 import { notFoundHandler } from "./shared/middleware/not-found";
 import { requestIdMiddleware } from "./shared/middleware/request-id";
+import { sessionsRouter } from "./modules/sessions/sessions.routes.js";
+import { usageRouter } from "./modules/usage/usage.routes.js";
 
 export const app = express();
 
@@ -41,5 +43,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/tenants", tenantsRouter);
 app.use("/api/computers", computersRouter);
+app.use("/api/sessions", sessionsRouter);
+app.use("/api/usage", usageRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
