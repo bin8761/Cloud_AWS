@@ -4,6 +4,7 @@
  */
 import type { Server as SocketIoServer } from "socket.io";
 import {
+    REALTIME_BLOCK_RULES_UPDATED_EVENT,
     REALTIME_COMPUTER_OFFLINE_EVENT,
     REALTIME_COMPUTER_ONLINE_EVENT,
 } from "./realtime.events";
@@ -84,6 +85,18 @@ export const createRealtimeGateway = (
         io.to(resolveGatewayTenantRoom(trustedContext)).emit(
             REALTIME_COMPUTER_OFFLINE_EVENT,
             buildComputerPresenceEventPayload(trustedContext)
+        );
+    },
+    emitBlockRulesUpdated: (tenantId, payload): void => {
+        assertTrustedRealtimeIdentifier(tenantId, "tenantId");
+
+        if (payload.tenantId !== tenantId) {
+            throw new Error("Realtime gateway block-rules payload tenant mismatch.");
+        }
+
+        io.to(resolveGatewayTenantRoom({ tenantId })).emit(
+            REALTIME_BLOCK_RULES_UPDATED_EVENT,
+            payload
         );
     },
 });

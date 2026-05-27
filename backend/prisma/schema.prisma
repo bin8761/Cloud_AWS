@@ -32,6 +32,17 @@ enum ComputerStatus {
   BLOCKED
 }
 
+enum BlockRuleType {
+  URL
+  PROCESS
+  KEYWORD
+}
+
+enum BlockRuleStatus {
+  ACTIVE
+  DISABLED
+}
+
 enum VerificationTargetType {
   EMAIL
 }
@@ -52,6 +63,7 @@ model Tenant {
 
   users     User[]
   computers Computer[]
+  blockRules BlockRule[]
 }
 
 model Computer {
@@ -71,6 +83,27 @@ model Computer {
   @@unique([tenantId, macAddress])
   @@index([tenantId, createdAt])
   @@index([tenantId, status])
+}
+
+model BlockRule {
+  id        String          @id @default(uuid())
+  tenantId  String
+  type      BlockRuleType
+  value     String          @db.VarChar(500)
+  label     String?         @db.VarChar(200)
+  reason    String?         @db.VarChar(500)
+  status    BlockRuleStatus @default(ACTIVE)
+  priority  Int             @default(0)
+  createdBy String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, type, value])
+  @@index([tenantId, status])
+  @@index([tenantId, type, status])
+  @@index([tenantId, createdAt])
 }
 
 model User {

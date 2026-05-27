@@ -4,6 +4,7 @@ import helmet from "helmet";
 
 import { env } from "./config/env";
 import { authRouter } from "./modules/auth/auth.routes";
+import { blockRulesRouter } from "./modules/block-rules/block-rules.routes";
 import { computersRouter } from "./modules/computers/computers.routes";
 import { healthRouter } from "./modules/health/health.routes";
 import { tenantsRouter } from "./modules/tenants/tenants.routes";
@@ -41,5 +42,6 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/tenants", tenantsRouter);
 app.use("/api/computers", computersRouter);
+app.use("/api/block-rules", blockRulesRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);

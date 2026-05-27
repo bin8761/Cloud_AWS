@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { app } from "./app";
 import { env } from "./config/env";
+import { setBlockRulesRealtimeGateway } from "./modules/block-rules/block-rules.service";
 import { healthService } from "./modules/health/health.service";
 import { createRealtimeServer } from "./modules/realtime";
 import { logger } from "./shared/logging/logger";
@@ -11,6 +12,7 @@ let shutdownInProgress = false;
 
 export const httpServer = createServer(app);
 export const realtimeServer = createRealtimeServer(httpServer);
+setBlockRulesRealtimeGateway(realtimeServer.getGateway());
 healthService.setRealtimeHealthProvider(() => realtimeServer.getRealtimeHealthSnapshot());
 
 export const server = httpServer.listen(env.server.port, () => {
