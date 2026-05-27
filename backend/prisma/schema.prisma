@@ -52,6 +52,10 @@ model Tenant {
 
   users     User[]
   computers Computer[]
+
+  sessions           Session[]
+  usageLogs          UsageLog[]
+  dailyUsageSummaries DailyUsageSummary[]
 }
 
 model Computer {
@@ -67,6 +71,10 @@ model Computer {
   updatedAt       DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  sessions           Session[]
+  usageLogs          UsageLog[]
+  dailyUsageSummaries DailyUsageSummary[]
 
   @@unique([tenantId, macAddress])
   @@index([tenantId, createdAt])
@@ -149,4 +157,64 @@ model PendingTenantRegistration {
   @@index([adminEmail, consumedAt])
   @@index([tenantCode, consumedAt])
   @@index([expiresAt])
+}
+
+model Session {
+  id         String        @id @default(cuid())
+  tenantId   String
+  computerId String
+  startedAt  DateTime      @default(now())
+  endedAt    DateTime?
+  status     SessionStatus @default(ACTIVE)
+  durationMinutes Int?
+  totalAmount     Decimal?  @db.Decimal(10, 2)
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  computer Computer @relation(fields: [computerId], references: [id])
+  usageLogs UsageLog[]
+
+  @@index([tenantId, computerId, startedAt])
+  @@index([tenantId, status])
+}
+
+model UsageLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  computerId String
+  sessionId  String
+  startedAt  DateTime
+  endedAt    DateTime
+  durationMinutes Int
+  pricePerHour    Decimal  @db.Decimal(10, 2)
+  totalAmount     Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  computer Computer @relation(fields: [computerId], references: [id])
+  session  Session  @relation(fields: [sessionId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, computerId, createdAt])
+}
+
+model DailyUsageSummary {
+  id              String   @id @default(cuid())
+  tenantId        String
+  computerId      String
+  date            DateTime @db.Date
+  totalMinutes    Int      @default(0)
+  totalAmount     Decimal  @db.Decimal(10, 2) @default(0)
+  sessionCount    Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  computer Computer @relation(fields: [computerId], references: [id])
+
+  @@unique([tenantId, computerId, date])
+  @@index([tenantId, date])
+}
+
+enum SessionStatus {
+  ACTIVE
+  ENDED
 }
