@@ -6,6 +6,10 @@ backend/.env.*
 # Dependencies
 backend/node_modules/
 
+web-admin/node_modules/
+
+web-admin/.env
+
 # Build output
 backend/dist/
 

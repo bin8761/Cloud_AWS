@@ -1,0 +1,767 @@
+﻿# CloudCMS Web Admin MVP Granular Task Breakdown
+
+Source TDD: `docs/tdd/web_admin/2026-05-27-web-admin-technical-design.md`
+
+Scope: Build a frontend-only React + Vite + TypeScript app in `web-admin/`. Do not change backend schemas, Prisma migrations, REST endpoints, Socket.IO event names, or backend authorization logic.
+
+Confirmed choices:
+
+- Styling uses Tailwind CSS with centralized tokens.
+- Access token is memory-first.
+- Refresh token is not persisted in MVP.
+- Computer detail uses drawer/sheet state; `/computers/:id` deep linking is post-MVP.
+- Playwright is included for full E2E/browser QA.
+
+## 1. Scaffold And Base Configuration
+
+- [x] Task 1: Create the `web-admin/` directory. (Completed)
+- [x] Task 2: Create `web-admin/package.json`. (Completed)
+- [x] Task 3: Add `dev` script using Vite. (Completed)
+- [x] Task 4: Add `build` script using TypeScript and Vite build. (Completed)
+- [x] Task 5: Add `preview` script using Vite preview. (Completed)
+- [x] Task 6: Add `typecheck` script using `tsc --noEmit`. (Completed)
+- [x] Task 7: Add `lint` script for frontend source files. (Completed)
+- [x] Task 8: Add `test` script using Vitest. (Completed)
+- [x] Task 9: Add `test:watch` script using Vitest watch mode. (Completed)
+- [x] Task 10: Add `test:e2e` script using Playwright. (Completed)
+- [x] Task 11: Create `web-admin/index.html`. (Completed)
+- [x] Task 12: Add the root element to `index.html`. (Completed)
+- [x] Task 13: Create `web-admin/src/`. (Completed)
+- [x] Task 14: Create `web-admin/src/main.tsx`. (Completed)
+- [x] Task 15: Create `web-admin/src/index.css`. (Completed)
+- [x] Task 16: Create `web-admin/vite.config.ts`. (Completed)
+- [x] Task 17: Configure `@vitejs/plugin-react` in Vite. (Completed)
+- [x] Task 18: Configure the `@` alias to `web-admin/src`. (Completed)
+- [x] Task 19: Create `web-admin/tsconfig.json`. (Completed)
+- [x] Task 20: Enable strict TypeScript checks. (Completed)
+- [x] Task 21: Configure JSX for React. (Completed)
+- [x] Task 22: Configure TypeScript path alias for `@/*`. (Completed)
+- [x] Task 23: Create `web-admin/tsconfig.node.json`. (Completed)
+- [x] Task 24: Create `web-admin/src/vite-env.d.ts`. (Completed)
+- [x] Task 25: Type `VITE_API_BASE_URL` in Vite env declarations. (Completed)
+- [x] Task 26: Type `VITE_SOCKET_URL` in Vite env declarations. (Completed)
+- [x] Task 27: Type `VITE_APP_ENV` in Vite env declarations. (Completed)
+- [x] Task 28: Create `web-admin/.env.example`. (Completed)
+- [x] Task 29: Add `VITE_API_BASE_URL` to `.env.example`. (Completed)
+- [x] Task 30: Add `VITE_SOCKET_URL` to `.env.example`. (Completed)
+- [x] Task 31: Add `VITE_APP_ENV` to `.env.example`. (Completed)
+- [x] Task 32: Install React runtime dependencies in `package.json`. (Completed)
+- [x] Task 33: Install React Router dependency in `package.json`. (Completed)
+- [x] Task 34: Install TanStack Query dependency in `package.json`. (Completed)
+- [x] Task 35: Install Socket.IO client dependency in `package.json`. (Completed)
+- [x] Task 36: Install `zod` dependency in `package.json`. (Completed)
+- [x] Task 37: Install `react-hook-form` dependency in `package.json`. (Completed)
+- [x] Task 38: Install Tailwind CSS dependencies in `package.json`. (Completed)
+- [x] Task 39: Install TypeScript and Vite dev dependencies. (Completed)
+- [x] Task 40: Install Vitest and jsdom dev dependencies. (Completed)
+- [x] Task 41: Install Testing Library dev dependencies. (Completed)
+- [x] Task 42: Install Playwright dev dependency. (Completed)
+- [x] Task 43: Install ESLint and formatting-compatible dev tooling. (Completed)
+
+## 2. Styling Foundation
+
+- [x] Task 44: Create Tailwind configuration file. (Completed)
+- [x] Task 45: Add all `src` file globs to Tailwind content paths. (Completed)
+- [x] Task 46: Create PostCSS configuration for Tailwind. (Completed)
+- [x] Task 47: Add Tailwind base imports to `src/index.css`. (Completed)
+- [x] Task 48: Create `src/ui/tokens.css`. (Completed)
+- [x] Task 49: Define light app background token. (Completed)
+- [x] Task 50: Define light app foreground text token. (Completed)
+- [x] Task 51: Define light app muted text token. (Completed)
+- [x] Task 52: Define light app border token. (Completed)
+- [x] Task 53: Define light app surface token. (Completed)
+- [x] Task 54: Define primary action color token. (Completed)
+- [x] Task 55: Define danger action color token. (Completed)
+- [x] Task 56: Define warning state color token. (Completed)
+- [x] Task 57: Define success state color token. (Completed)
+- [x] Task 58: Define dark realtime panel background token. (Completed)
+- [x] Task 59: Define dark realtime panel foreground token. (Completed)
+- [x] Task 60: Define dark realtime panel muted text token. (Completed)
+- [x] Task 61: Define dark realtime panel border token. (Completed)
+- [x] Task 62: Define focus ring token. (Completed)
+- [x] Task 63: Define status colors for Active, Inactive, Blocked, Online, Offline, Reconnecting, and Unavailable. (Completed)
+- [x] Task 64: Define spacing tokens for page gutters and dense table spacing. (Completed)
+- [x] Task 65: Define border radius tokens with card radius at 8px or less. (Completed)
+- [x] Task 66: Import `tokens.css` from `src/index.css`. (Completed)
+- [x] Task 67: Configure Fira Sans as the default app font. (Completed)
+- [x] Task 68: Configure Fira Code utility class for technical values. (Completed)
+- [x] Task 69: Add global `box-sizing` and body layout styles. (Completed)
+- [x] Task 70: Add global focus-visible styling. (Completed)
+
+## 3. App Folders And Shared UI
+
+- [x] Task 71: Create `src/app/`. (Completed)
+- [x] Task 72: Create `src/auth/`. (Completed)
+- [x] Task 73: Create `src/computers/`. (Completed)
+- [x] Task 74: Create `src/dashboard/`. (Completed)
+- [x] Task 75: Create `src/realtime/`. (Completed)
+- [x] Task 76: Create `src/ui/`. (Completed)
+- [x] Task 77: Create `src/lib/`. (Completed)
+- [x] Task 78: Create `src/app/App.tsx`. (Completed)
+- [x] Task 79: Create `src/app/providers.tsx`. (Completed)
+- [x] Task 80: Create `src/app/routes.tsx`. (Completed)
+- [x] Task 81: Render `App` from `main.tsx`. (Completed)
+- [x] Task 82: Wrap the app with `StrictMode`. (Completed)
+- [x] Task 83: Create TanStack Query client in `providers.tsx`. (Completed)
+- [x] Task 84: Set sane default query stale time for REST reads. (Completed)
+- [x] Task 85: Disable aggressive retry for auth-sensitive requests. (Completed)
+- [x] Task 86: Add QueryClientProvider. (Completed)
+- [x] Task 87: Add Browser Router provider. (Completed)
+- [x] Task 88: Wire routes into `App.tsx`. (Completed)
+- [x] Task 89: Create `src/ui/Button.tsx`. (Completed)
+- [x] Task 90: Create `src/ui/IconButton.tsx`. (Completed)
+- [x] Task 91: Create `src/ui/TextInput.tsx`. (Completed)
+- [x] Task 92: Create `src/ui/Select.tsx`. (Completed)
+- [x] Task 93: Create `src/ui/Textarea.tsx`. (Completed)
+- [x] Task 94: Create `src/ui/StatusBadge.tsx`. (Completed)
+- [x] Task 95: Create `src/ui/EmptyState.tsx`. (Completed)
+- [x] Task 96: Create `src/ui/ErrorState.tsx`. (Completed)
+- [x] Task 97: Create `src/ui/ForbiddenState.tsx`. (Completed)
+- [x] Task 98: Create `src/ui/Skeleton.tsx`. (Completed)
+- [x] Task 99: Create `src/ui/Modal.tsx`. (Completed)
+- [x] Task 100: Create `src/ui/Drawer.tsx`. (Completed)
+- [x] Task 101: Create `src/ui/Sheet.tsx`. (Completed)
+- [x] Task 102: Add keyboard focus handling to shared `Modal`. (Completed)
+- [x] Task 103: Add Escape-key close handling to shared `Modal`. (Completed)
+- [x] Task 104: Add focus restore handling to shared `Modal`. (Completed)
+- [x] Task 105: Add keyboard focus handling to shared `Drawer`. (Completed)
+- [x] Task 106: Add Escape-key close handling to shared `Drawer`. (Completed)
+- [x] Task 107: Add focus restore handling to shared `Drawer`. (Completed)
+- [x] Task 108: Ensure all shared buttons have at least 44px height on mobile. (Completed)
+
+## 4. Routing And Shell
+
+- [x] Task 109: Define `/login` public route. (Completed)
+- [x] Task 110: Define `/dashboard` protected route. (Completed)
+- [x] Task 111: Define `/computers` protected route. (Completed)
+- [x] Task 112: Add authenticated default redirect to `/dashboard`. (Completed)
+- [x] Task 113: Add unknown route fallback. (Completed)
+- [x] Task 114: Create `src/auth/ProtectedRoute.tsx`. (Completed)
+- [x] Task 115: Render loading state while auth bootstraps. (Completed)
+- [x] Task 116: Redirect unauthenticated protected route visits to `/login`. (Completed)
+- [x] Task 117: Render protected children for authenticated users. (Completed)
+- [x] Task 118: Create `src/ui/AppShell.tsx`. (Completed)
+- [x] Task 119: Add fixed desktop sidebar to `AppShell`. (Completed)
+- [x] Task 120: Add Dashboard navigation link. (Completed)
+- [x] Task 121: Add Computers navigation link. (Completed)
+- [x] Task 122: Add active navigation styling. (Completed)
+- [x] Task 123: Add topbar to `AppShell`. (Completed)
+- [x] Task 124: Add tenant name display to topbar. (Completed)
+- [x] Task 125: Add current user display to topbar. (Completed)
+- [x] Task 126: Add logout action to topbar. (Completed)
+- [x] Task 127: Add tablet/mobile sidebar drawer trigger. (Completed)
+- [x] Task 128: Hide fixed sidebar below desktop breakpoint. (Completed)
+- [x] Task 129: Add constrained page content container. (Completed)
+- [x] Task 130: Ensure shell has no horizontal page scroll on mobile. (Completed)
+
+## 5. Types And Utilities
+
+- [x] Task 131: Create `src/auth/auth.types.ts`. (Completed)
+- [x] Task 132: Define `LoginInput` type. (Completed)
+- [x] Task 133: Define `LoginResult` type. (Completed)
+- [x] Task 134: Define `CurrentUser` type. (Completed)
+- [x] Task 135: Define `TenantContext` type. (Completed)
+- [x] Task 136: Define auth status union type. (Completed)
+- [x] Task 137: Create `src/computers/computers.types.ts`. (Completed)
+- [x] Task 138: Define `ComputerStatus` as `ACTIVE | INACTIVE | BLOCKED`. (Completed)
+- [x] Task 139: Define `Computer` type with backend fields from TDD. (Completed)
+- [x] Task 140: Define `ComputersListQuery` type. (Completed)
+- [x] Task 141: Define `ComputersListResponse` type. (Completed)
+- [x] Task 142: Define `UpdateComputerInput` type with only allowed fields. (Completed)
+- [x] Task 143: Define `ReissueTokenInput` type. (Completed)
+- [x] Task 144: Define `ReissueTokenResult` type. (Completed)
+- [x] Task 145: Define `ComputerRowViewModel` type. (Completed)
+- [x] Task 146: Create `src/realtime/realtime.types.ts`. (Completed)
+- [x] Task 147: Define `PresenceSource` type. (Completed)
+- [x] Task 148: Define `Presence` type. (Completed)
+- [x] Task 149: Define `WatchTenantAck` success and failure types. (Completed)
+- [x] Task 150: Define `ComputerPresenceEvent` type. (Completed)
+- [x] Task 151: Define realtime connection status type. (Completed)
+- [x] Task 152: Define recent realtime event feed item type. (Completed)
+- [x] Task 153: Create `src/lib/errors.ts`. (Completed)
+- [x] Task 154: Define frontend API error type. (Completed)
+- [x] Task 155: Define helper for detecting auth errors. (Completed)
+- [x] Task 156: Define helper for detecting forbidden errors. (Completed)
+- [x] Task 157: Define helper for detecting rate limit errors. (Completed)
+- [x] Task 158: Create `src/lib/date.ts`. (Completed)
+- [x] Task 159: Implement absolute timestamp formatter. (Completed)
+- [x] Task 160: Implement nullable timestamp formatter. (Completed)
+- [x] Task 161: Implement relative `lastSeenAt` formatter. (Completed)
+- [x] Task 162: Create `src/lib/debounce.ts`. (Completed)
+- [x] Task 163: Implement debounce hook or utility for search input. (Completed)
+
+## 6. API Client
+
+- [x] Task 164: Create `src/lib/apiClient.ts`. (Completed)
+- [x] Task 165: Read REST base URL from `VITE_API_BASE_URL`. (Completed)
+- [x] Task 166: Normalize leading and trailing slashes for request paths. (Completed)
+- [x] Task 167: Implement JSON request body serialization. (Completed)
+- [x] Task 168: Implement query string serialization for list filters. (Completed)
+- [x] Task 169: Implement response JSON parsing. (Completed)
+- [x] Task 170: Handle empty response bodies safely. (Completed)
+- [x] Task 171: Parse Foundation success envelopes. (Completed)
+- [x] Task 172: Parse Foundation error envelopes. (Completed)
+- [x] Task 173: Convert unknown error bodies into frontend-safe errors. (Completed)
+- [x] Task 174: Preserve HTTP status on normalized errors. (Completed)
+- [x] Task 175: Preserve safe backend error code when present. (Completed)
+- [x] Task 176: Add in-memory access token getter registration. (Completed)
+- [x] Task 177: Add auth clear callback registration. (Completed)
+- [x] Task 178: Add realtime disconnect callback registration. (Completed)
+- [x] Task 179: Attach `Authorization: Bearer <token>` when token exists. (Completed)
+- [x] Task 180: Omit Authorization header when token does not exist. (Completed)
+- [x] Task 181: Trigger auth clear callback on `401`. (Completed)
+- [x] Task 182: Trigger realtime disconnect callback on `401`. (Completed)
+- [x] Task 183: Keep `403` available to page-level UI. (Completed)
+- [x] Task 184: Keep `404` available to feature-level UI. (Completed)
+- [x] Task 185: Keep `409` available to mutation UI. (Completed)
+- [x] Task 186: Keep `429` available to rate-limit UI. (Completed)
+- [x] Task 187: Keep `500` available to generic error UI. (Completed)
+- [x] Task 188: Ensure API client never logs request headers. (Completed)
+- [x] Task 189: Ensure API client never logs access tokens. (Completed)
+- [x] Task 190: Ensure API client never logs reissue token responses. (Completed)
+
+## 7. Auth Implementation
+
+- [x] Task 191: Create `src/auth/auth.api.ts`. (Completed)
+- [x] Task 192: Implement `login(input)` using `POST /api/auth/login`. (Completed)
+- [x] Task 193: Implement `getMe()` using `GET /api/auth/me`. (Completed)
+- [x] Task 194: Implement `logout()` frontend wrapper. (Completed)
+- [x] Task 195: Add `refreshToken()` function stub only if needed by backend contract typing. (Completed)
+- [x] Task 196: Create src/auth/auth.store.ts. (Completed)
+- [x] Task 197: Store access token in module memory or auth provider state only. (Completed)
+- [x] Task 198: Store current user in auth state. (Completed)
+- [x] Task 199: Store tenant context in auth state. (Completed)
+- [x] Task 200: Store auth bootstrap loading state. (Completed)
+- [x] Task 201: Store auth error state. (Completed)
+- [x] Task 202: Expose `setAccessToken`. (Completed)
+- [x] Task 203: Expose `clearSession`. (Completed)
+- [x] Task 204: Expose `bootstrapSession`. (Completed)
+- [x] Task 205: Expose `loginWithPassword`. (Completed)
+- [x] Task 206: Expose `logoutUser`. (Completed)
+- [x] Task 207: Register API client token getter with auth store. (Completed)
+- [x] Task 208: Register API client `401` callback with auth store. (Completed)
+- [x] Task 209: Ensure refresh token is not written to localStorage. (Completed)
+- [x] Task 210: Ensure access token is not written to localStorage. (Completed)
+- [x] Task 211: Ensure access token is not written to sessionStorage. (Completed)
+- [x] Task 212: Create `src/auth/LoginPage.tsx`. (Completed)
+- [x] Task 213: Create login form schema with `zod`. (Completed)
+- [x] Task 214: Validate required email field. (Completed)
+- [x] Task 215: Validate email format. (Completed)
+- [x] Task 216: Validate required password field. (Completed)
+- [x] Task 217: Wire login form with `react-hook-form`. (Completed)
+- [x] Task 218: Add email input. (Completed)
+- [x] Task 219: Add password input. (Completed)
+- [x] Task 220: Add submit button. (Completed)
+- [x] Task 221: Disable submit while login is pending. (Completed)
+- [x] Task 222: Display field validation errors. (Completed)
+- [x] Task 223: Display safe login failure message. (Completed)
+- [x] Task 224: Call `POST /api/auth/login` on valid submit. (Completed)
+- [x] Task 225: Store returned access token in memory after login. (Completed)
+- [x] Task 226: Call `GET /api/auth/me` after login. (Completed)
+- [x] Task 227: Store current user and tenant after `getMe`. (Completed)
+- [x] Task 228: Navigate to `/dashboard` after successful login bootstrap. (Completed)
+- [x] Task 229: Clear password field after failed login if appropriate. (Completed)
+- [x] Task 230: Add accessible labels for email and password fields. (Completed)
+
+## 8. Computers API And Query Hooks
+
+- [x] Task 231: Create `src/computers/computers.api.ts`. (Completed)
+- [x] Task 232: Implement `listComputers(query)`. (Completed)
+- [x] Task 233: Map list query `page` to URL query param. (Completed)
+- [x] Task 234: Map list query `pageSize` to URL query param. (Completed)
+- [x] Task 235: Map list query `status` to URL query param. (Completed)
+- [x] Task 236: Map list query `q` to URL query param. (Completed)
+- [x] Task 237: Map list query `sort` to URL query param. (Completed)
+- [x] Task 238: Implement `getComputer(id)`. (Completed)
+- [x] Task 239: Implement `updateComputer(id, input)`. (Completed)
+- [x] Task 240: Implement `reissueComputerToken(id, input)`. (Completed)
+- [x] Task 241: Create `src/computers/computers.queries.ts`. (Completed)
+- [x] Task 242: Create query key factory for computer list. (Completed)
+- [x] Task 243: Include page in list query key. (Completed)
+- [x] Task 244: Include page size in list query key. (Completed)
+- [x] Task 245: Include status in list query key. (Completed)
+- [x] Task 246: Include search text in list query key. (Completed)
+- [x] Task 247: Include sort in list query key. (Completed)
+- [x] Task 248: Create query key factory for computer detail. (Completed)
+- [x] Task 249: Create list query hook. (Completed)
+- [x] Task 250: Create detail query hook. (Completed)
+- [x] Task 251: Create update mutation hook. (Completed)
+- [x] Task 252: Create reissue token mutation hook. (Completed)
+- [x] Task 253: Create `src/computers/computerPayload.ts`. (Completed)
+- [x] Task 254: Add `name` to update allowlist. (Completed)
+- [x] Task 255: Add `status` to update allowlist. (Completed)
+- [x] Task 256: Add `notes` to update allowlist. (Completed)
+- [x] Task 257: Exclude `tenantId` from update payloads. (Completed)
+- [x] Task 258: Exclude `macAddress` from update payloads. (Completed)
+- [x] Task 259: Exclude `deviceToken` from update payloads. (Completed)
+- [x] Task 260: Exclude `deviceTokenHash` from update payloads. (Completed)
+- [x] Task 261: Exclude `lastSeenAt` from update payloads. (Completed)
+- [x] Task 262: Exclude `createdAt` from update payloads. (Completed)
+- [x] Task 263: Exclude `updatedAt` from update payloads. (Completed)
+- [x] Task 264: Snapshot previous list cache before optimistic update. (Completed)
+- [x] Task 265: Snapshot previous detail cache before optimistic update. (Completed)
+- [x] Task 266: Apply optimistic update to matching list item. (Completed)
+- [x] Task 267: Apply optimistic update to detail cache. (Completed)
+- [x] Task 268: Replace optimistic list item with server response on success. (Completed)
+- [x] Task 269: Replace optimistic detail data with server response on success. (Completed)
+- [x] Task 270: Roll back list cache on update error. (Completed)
+- [x] Task 271: Roll back detail cache on update error. (Completed)
+- [x] Task 272: Return reissued `deviceToken` only to mutation caller. (Completed)
+- [x] Task 273: Update computer cache after reissue without storing `deviceToken`. (Completed)
+
+## 9. Realtime Implementation
+
+- [x] Task 274: Create `src/realtime/realtime.client.ts`. (Completed)
+- [x] Task 275: Read socket base URL from `VITE_SOCKET_URL`. (Completed)
+- [x] Task 276: Configure Socket.IO path as `/socket.io`. (Completed)
+- [x] Task 277: Add `clientType: "admin"` to socket auth payload. (Completed)
+- [x] Task 278: Add current access token to socket auth payload. (Completed)
+- [x] Task 279: Disable logging of socket auth payload. (Completed)
+- [x] Task 280: Create socket connect function. (Completed)
+- [x] Task 281: Create socket disconnect function. (Completed)
+- [x] Task 282: Create `src/realtime/realtime.store.ts`. (Completed)
+- [x] Task 283: Store connection status. (Completed)
+- [x] Task 284: Store `presenceByComputerId`. (Completed)
+- [x] Task 285: Store realtime error state. (Completed)
+- [x] Task 286: Store recent event feed. (Completed)
+- [x] Task 287: Implement connected state action. (Completed)
+- [x] Task 288: Implement reconnecting state action. (Completed)
+- [x] Task 289: Implement disconnected state action. (Completed)
+- [x] Task 290: Implement unavailable/error state action. (Completed)
+- [x] Task 291: Implement tenant watch snapshot action. (Completed)
+- [x] Task 292: Mark snapshot computer IDs online. (Completed)
+- [x] Task 293: Set snapshot presence source to `snapshot`. (Completed)
+- [x] Task 294: Preserve existing REST rows when applying snapshot. (Completed)
+- [x] Task 295: Implement `computer:online` action. (Completed)
+- [x] Task 296: Update only matching `computerId` for online events. (Completed)
+- [x] Task 297: Set online event presence source to `socket-event`. (Completed)
+- [x] Task 298: Implement `computer:offline` action. (Completed)
+- [x] Task 299: Update only matching `computerId` for offline events. (Completed)
+- [x] Task 300: Set offline event presence source to `socket-event`. (Completed)
+- [x] Task 301: Add received timestamp to presence updates. (Completed)
+- [x] Task 302: Keep recent event feed bounded to configured maximum. (Completed)
+- [x] Task 303: Create `src/realtime/useAdminPresence.ts`. (Completed)
+- [x] Task 304: Connect socket when auth state becomes authenticated. (Completed)
+- [x] Task 305: Avoid creating duplicate sockets on rerender. (Completed)
+- [x] Task 306: Disconnect socket on logout. (Completed)
+- [x] Task 307: Disconnect socket on `401` auth clearing. (Completed)
+- [x] Task 308: Emit `admin:watch-tenant` after connect. (Completed)
+- [x] Task 309: Handle successful watch tenant ack. (Completed)
+- [x] Task 310: Handle failed watch tenant ack. (Completed)
+- [x] Task 311: Emit `admin:watch-tenant` again after reconnect. (Completed)
+- [x] Task 312: Trigger exactly one list resync after reconnect. (Completed)
+- [x] Task 313: Ensure realtime events do not trigger list refetch per event. (Completed)
+- [x] Task 314: Ensure disconnected state does not mark all computers offline. (Completed)
+
+## 10. Selectors And Derived View Models
+
+- [x] Task 315: Create `src/computers/computerSelectors.ts`. (Completed)
+- [x] Task 316: Implement computer display name fallback. (Completed)
+- [x] Task 317: Map `ACTIVE` to `Active`. (Completed)
+- [x] Task 318: Map `INACTIVE` to `Inactive`. (Completed)
+- [x] Task 319: Map `BLOCKED` to `Blocked`. (Completed)
+- [x] Task 320: Map online presence to `Online`. (Completed)
+- [x] Task 321: Map offline presence to `Offline`. (Completed)
+- [x] Task 322: Map missing presence to `Unavailable`. (Completed)
+- [x] Task 323: Map reconnecting socket state to `Reconnecting`. (Completed)
+- [x] Task 324: Merge computer rows with presence by computer id. (Completed)
+- [x] Task 325: Keep admin status independent from realtime status. (Completed)
+- [x] Task 326: Create `src/dashboard/dashboardSelectors.ts`. (Completed)
+- [x] Task 327: Compute total computer count. (Completed)
+- [x] Task 328: Compute online count. (Completed)
+- [x] Task 329: Compute offline count. (Completed)
+- [x] Task 330: Compute blocked/inactive count. (Completed)
+- [x] Task 331: Ensure selectors do not mutate input arrays. (Completed)
+- [x] Task 332: Ensure selectors tolerate empty lists. (Completed)
+
+## 11. Dashboard UI
+
+- [x] Task 333: Create `src/dashboard/DashboardPage.tsx`. (Completed)
+- [x] Task 334: Fetch computer list on dashboard. (Completed)
+- [x] Task 335: Subscribe to admin presence on dashboard. (Completed)
+- [x] Task 336: Merge list data with presence data on dashboard. (Completed)
+- [x] Task 337: Render dashboard inside `AppShell`. (Completed)
+- [x] Task 338: Create `src/dashboard/KpiStrip.tsx`. (Completed)
+- [x] Task 339: Render total KPI card. (Completed)
+- [x] Task 340: Render online KPI card. (Completed)
+- [x] Task 341: Render offline KPI card. (Completed)
+- [x] Task 342: Render blocked/inactive KPI card. (Completed)
+- [x] Task 343: Add skeleton state for KPI cards. (Completed)
+- [x] Task 344: Add stable card dimensions for KPI cards. (Completed)
+- [x] Task 345: Create `src/dashboard/RealtimePanel.tsx`. (Completed)
+- [x] Task 346: Render dark realtime panel shell. (Completed)
+- [x] Task 347: Render connected state in realtime panel. (Completed)
+- [x] Task 348: Render reconnecting state in realtime panel. (Completed)
+- [x] Task 349: Render disconnected state in realtime panel. (Completed)
+- [x] Task 350: Render realtime unavailable state in realtime panel. (Completed)
+- [x] Task 351: Render failed watch ack state in realtime panel. (Completed)
+- [x] Task 352: Render bounded recent event feed. (Completed)
+- [x] Task 353: Render dashboard empty computers state. (Completed)
+- [x] Task 354: Render dashboard REST error state with retry. (Completed)
+- [x] Task 355: Render dashboard forbidden state. (Completed)
+- [x] Task 356: Render populated dashboard state. (Completed)
+
+## 12. Computers Page UI
+
+- [x] Task 357: Create `src/computers/ComputersPage.tsx`. (Completed)
+- [x] Task 358: Render Computers page inside `AppShell`. (Completed)
+- [x] Task 359: Initialize page state to page 1. (Completed)
+- [x] Task 360: Initialize page size state. (Completed)
+- [x] Task 361: Initialize status filter state. (Completed)
+- [x] Task 362: Initialize search input state. (Completed)
+- [x] Task 363: Initialize debounced search state. (Completed)
+- [x] Task 364: Initialize sort state. (Completed)
+- [x] Task 365: Initialize selected computer id state. (Completed)
+- [x] Task 366: Initialize detail open state. (Completed)
+- [x] Task 367: Initialize reissue modal state. (Completed)
+- [x] Task 368: Fetch computers using current list state. (Completed)
+- [x] Task 369: Reset page to 1 when search changes. (Completed)
+- [x] Task 370: Reset page to 1 when status filter changes. (Completed)
+- [x] Task 371: Reset page to 1 when page size changes. (Completed)
+- [x] Task 372: Create computer list toolbar component. (Completed)
+- [x] Task 373: Add search input to toolbar. (Completed)
+- [x] Task 374: Add status filter select to toolbar. (Completed)
+- [x] Task 375: Add sort select to toolbar. (Completed)
+- [x] Task 376: Add page size select to toolbar. (Completed)
+- [x] Task 377: Add pagination controls. (Completed)
+- [x] Task 378: Disable previous page button on first page. (Completed)
+- [x] Task 379: Disable next page button on last page. (Completed)
+- [x] Task 380: Render list loading skeleton. (Completed)
+- [x] Task 381: Render list empty state. (Completed)
+- [x] Task 382: Render list error state with retry. (Completed)
+- [x] Task 383: Render list forbidden state. (Completed)
+- [x] Task 384: Subscribe to realtime presence on Computers page. (Completed)
+- [x] Task 385: Merge computer list rows with presence map. (Completed)
+
+## 13. Computer Table And Mobile Cards
+
+- [x] Task 386: Create `src/computers/ComputerTable.tsx`. (Completed)
+- [x] Task 387: Add display name column. (Completed)
+- [x] Task 388: Add MAC address column using Fira Code. (Completed)
+- [x] Task 389: Add admin status column. (Completed)
+- [x] Task 390: Add realtime status column. (Completed)
+- [x] Task 391: Add last seen column. (Completed)
+- [x] Task 392: Add updated at column. (Completed)
+- [x] Task 393: Add row action column. (Completed)
+- [x] Task 394: Add accessible row detail action. (Completed)
+- [x] Task 395: Hide non-critical columns at tablet breakpoint. (Completed)
+- [x] Task 396: Use compact action buttons at laptop breakpoint. (Completed)
+- [x] Task 397: Keep table layout stable during loading and updates. (Completed)
+- [x] Task 398: Create `src/computers/ComputerCardList.tsx`. (Completed)
+- [x] Task 399: Render display name on mobile card. (Completed)
+- [x] Task 400: Render MAC address on mobile card using Fira Code. (Completed)
+- [x] Task 401: Render admin status on mobile card. (Completed)
+- [x] Task 402: Render realtime status on mobile card. (Completed)
+- [x] Task 403: Render last seen on mobile card. (Completed)
+- [x] Task 404: Add mobile card detail action. (Completed)
+- [x] Task 405: Ensure mobile cards do not cause horizontal scroll. (Completed)
+- [x] Task 406: Ensure mobile card actions are at least 44px high. (Completed)
+
+## 14. Computer Detail Drawer And Sheet
+
+- [x] Task 407: Create `src/computers/ComputerDetailDrawer.tsx`. (Completed)
+- [x] Task 408: Open drawer when desktop/tablet row action is clicked. (Completed)
+- [x] Task 409: Open full-screen sheet when mobile card action is clicked. (Completed)
+- [x] Task 410: Fetch detail data when selected list data is stale. (Completed)
+- [x] Task 411: Render computer display name. (Completed)
+- [x] Task 412: Render computer id using Fira Code. (Completed)
+- [x] Task 413: Render MAC address using Fira Code. (Completed)
+- [x] Task 414: Render tenant id as read-only if shown. (Completed)
+- [x] Task 415: Render admin status. (Completed)
+- [x] Task 416: Render realtime presence. (Completed)
+- [x] Task 417: Render last seen timestamp. (Completed)
+- [x] Task 418: Render created at timestamp. (Completed)
+- [x] Task 419: Render updated at timestamp. (Completed)
+- [x] Task 420: Render notes. (Completed)
+- [x] Task 421: Add editable name field. (Completed)
+- [x] Task 422: Add editable status select. (Completed)
+- [x] Task 423: Add editable notes textarea. (Completed)
+- [x] Task 424: Do not render editable tenant id field. (Completed)
+- [x] Task 425: Do not render editable MAC address field. (Completed)
+- [x] Task 426: Do not render editable token fields. (Completed)
+- [x] Task 427: Add save button. (Completed)
+- [x] Task 428: Disable save button when update is pending. (Completed)
+- [x] Task 429: Apply optimistic UI on save. (Completed)
+- [x] Task 430: Show pending update state. (Completed)
+- [x] Task 431: Show update success feedback. (Completed)
+- [x] Task 432: Show update rollback error feedback. (Completed)
+- [x] Task 433: Show rate-limited update feedback. (Completed)
+- [x] Task 434: Show forbidden update feedback. (Completed)
+- [x] Task 435: Restore focus when drawer closes. (Completed)
+- [x] Task 436: Restore focus when mobile sheet closes. (Completed)
+
+## 15. Token Reissue Flow
+
+- [x] Task 437: Create `src/computers/ReissueTokenModal.tsx`. (Completed)
+- [x] Task 438: Add reissue trigger button in detail drawer. (Completed)
+- [x] Task 439: Open reissue modal from detail drawer. (Completed)
+- [x] Task 440: Show selected computer identity in modal. (Completed)
+- [x] Task 441: Show token reissue warning text. (Completed)
+- [x] Task 442: Add reason input. (Completed)
+- [x] Task 443: Validate reason as required. (Completed)
+- [x] Task 444: Add cancel button. (Completed)
+- [x] Task 445: Add confirm reissue button. (Completed)
+- [x] Task 446: Disable confirm button while reissue is pending. (Completed)
+- [x] Task 447: Call `POST /api/computers/:id/reissue-token` on confirm. (Completed)
+- [x] Task 448: Store returned plain token in modal local state only. (Completed)
+- [x] Task 449: Render plain token after success. (Completed)
+- [x] Task 450: Render token using Fira Code. (Completed)
+- [x] Task 451: Add copy token button. (Completed)
+- [x] Task 452: Copy token to clipboard on copy action. (Completed)
+- [x] Task 453: Show copy success feedback. (Completed)
+- [x] Task 454: Show copy failure feedback. (Completed)
+- [x] Task 455: Clear plain token when modal closes. (Completed)
+- [x] Task 456: Clear plain token when selected computer changes. (Completed)
+- [x] Task 457: Ensure token is not written to query cache. (Completed)
+- [x] Task 458: Ensure token is not written to localStorage. (Completed)
+- [x] Task 459: Ensure token is not written to sessionStorage. (Completed)
+- [x] Task 460: Ensure token is not added to URL params. (Completed)
+- [x] Task 461: Ensure token is not logged. (Completed)
+- [x] Task 462: Ensure long token wraps without hiding copy button. (Completed)
+
+## 16. Responsive Layout And Accessibility
+
+- [x] Task 463: Add desktop breakpoint styles for fixed sidebar. (Completed)
+- [x] Task 464: Add desktop dashboard grid styles. (Completed)
+- [x] Task 465: Add desktop full KPI strip styles. (Completed)
+- [x] Task 466: Add desktop full table column styles. (Completed)
+- [x] Task 467: Add laptop compact action styles. (Completed)
+- [x] Task 468: Add laptop responsive dashboard panel styles. (Completed)
+- [x] Task 469: Add tablet sidebar drawer styles. (Completed)
+- [x] Task 470: Add tablet KPI 2x2 layout styles. (Completed)
+- [x] Task 471: Add tablet hidden non-critical table column styles. (Completed)
+- [x] Task 472: Add mobile app shell styles. (Completed)
+- [x] Task 473: Add mobile computer card list styles. (Completed)
+- [x] Task 474: Add mobile full-screen detail sheet styles. (Completed)
+- [x] Task 475: Add mobile bounded realtime feed styles. (Completed)
+- [x] Task 476: Prevent horizontal body scroll on mobile. (Completed)
+- [x] Task 477: Add accessible names to icon buttons. (Completed)
+- [x] Task 478: Add visible labels or aria labels to filters. (Completed)
+- [x] Task 479: Add text labels to all status indicators. (Completed)
+- [x] Task 480: Ensure color is not the only status signal. (Completed)
+- [x] Task 481: Verify tab order through login form. (Completed)
+- [x] Task 482: Verify tab order through app sidebar. (Completed)
+- [x] Task 483: Verify tab order through computer filters. (Completed)
+- [x] Task 484: Verify tab order through table row actions. (Completed)
+- [x] Task 485: Verify tab order through mobile card actions. (Completed)
+- [x] Task 486: Verify tab order through drawer fields. (Completed)
+- [x] Task 487: Verify tab order through reissue modal. (Completed)
+- [x] Task 488: Ensure focus ring is visible on light surfaces. (Completed)
+- [x] Task 489: Ensure focus ring is visible on dark realtime panel. (Completed)
+
+## 17. Security And Reliability Hardening
+
+- [x] Task 490: Search code for localStorage usage. (Completed)
+- [x] Task 491: Remove or block auth secret writes to localStorage. (Completed)
+- [x] Task 492: Remove or block device token writes to localStorage. (Completed)
+- [x] Task 493: Search code for sessionStorage usage. (Completed)
+- [x] Task 494: Remove or block auth secret writes to sessionStorage. (Completed)
+- [x] Task 495: Remove or block device token writes to sessionStorage. (Completed)
+- [x] Task 496: Search code for console logging in auth paths. (Completed)
+- [x] Task 497: Remove token values from auth logs. (Completed)
+- [x] Task 498: Search code for console logging in realtime paths. (Completed)
+- [x] Task 499: Remove socket auth payloads from realtime logs. (Completed)
+- [x] Task 500: Search code for console logging in reissue paths. (Completed)
+- [x] Task 501: Remove device token values from reissue logs. (Completed)
+- [x] Task 502: Ensure `401` clears auth state. (Completed)
+- [x] Task 503: Ensure `401` disconnects realtime socket. (Completed)
+- [x] Task 504: Ensure `401` redirects to `/login`. (Completed)
+- [x] Task 505: Ensure `403` keeps auth state. (Completed)
+- [x] Task 506: Ensure `403` renders forbidden UI. (Completed)
+- [x] Task 507: Ensure disconnected realtime state preserves REST rows. (Completed)
+- [x] Task 508: Ensure reconnecting realtime state preserves REST rows. (Completed)
+- [x] Task 509: Ensure failed watch ack preserves REST rows. (Completed)
+- [x] Task 510: Ensure duplicate login submit is disabled. (Completed)
+- [x] Task 511: Ensure duplicate update submit is disabled. (Completed)
+- [x] Task 512: Ensure duplicate token reissue submit is disabled. (Completed)
+- [x] Task 513: Avoid `dangerouslySetInnerHTML`. (Completed)
+- [x] Task 514: Render notes through normal React text rendering. (Completed)
+
+## 18. Unit Tests
+
+- [x] Task 515: Configure Vitest. (Completed)
+- [x] Task 516: Configure jsdom environment. (Completed)
+- [x] Task 517: Create test setup file. (Completed)
+- [x] Task 518: Add Testing Library cleanup setup. (Completed)
+- [x] Task 519: Test `apiClient` without token. (Completed)
+- [x] Task 520: Test `apiClient` with token. (Completed)
+- [x] Task 521: Test Foundation success response parsing. (Completed)
+- [x] Task 522: Test Foundation `401` error parsing. (Completed)
+- [x] Task 523: Test Foundation `403` error parsing. (Completed)
+- [x] Task 524: Test Foundation `404` error parsing. (Completed)
+- [x] Task 525: Test Foundation `409` error parsing. (Completed)
+- [x] Task 526: Test Foundation `429` error parsing. (Completed)
+- [x] Task 527: Test Foundation `500` error parsing. (Completed)
+- [x] Task 528: Test auth store initial unauthenticated state. (Completed)
+- [x] Task 529: Test auth store login success state. (Completed)
+- [x] Task 530: Test auth store clear session behavior. (Completed)
+- [x] Task 531: Test auth store `401` callback behavior. (Completed)
+- [x] Task 532: Test update payload includes `name`. (Completed)
+- [x] Task 533: Test update payload includes `status`. (Completed)
+- [x] Task 534: Test update payload includes `notes`. (Completed)
+- [x] Task 535: Test update payload excludes `tenantId`. (Completed)
+- [x] Task 536: Test update payload excludes `macAddress`. (Completed)
+- [x] Task 537: Test update payload excludes token fields. (Completed)
+- [x] Task 538: Test update payload excludes timestamp fields. (Completed)
+- [x] Task 539: Test presence snapshot reducer. (Completed)
+- [x] Task 540: Test online event reducer. (Completed)
+- [x] Task 541: Test offline event reducer. (Completed)
+- [x] Task 542: Test reconnecting state reducer. (Completed)
+- [x] Task 543: Test disconnected state reducer. (Completed)
+- [x] Task 544: Test failed watch ack reducer. (Completed)
+- [x] Task 545: Test bounded event feed reducer. (Completed)
+- [x] Task 546: Test display name selector fallback. (Completed)
+- [x] Task 547: Test admin status label selector. (Completed)
+- [x] Task 548: Test realtime label selector. (Completed)
+- [x] Task 549: Test KPI total count selector. (Completed)
+- [x] Task 550: Test KPI online count selector. (Completed)
+- [x] Task 551: Test KPI offline count selector. (Completed)
+- [x] Task 552: Test KPI blocked/inactive count selector. (Completed)
+
+## 19. Component And Integration-Style Tests
+
+- [x] Task 553: Test login form required email validation.
+- [x] Task 554: Test login form email format validation.
+- [x] Task 555: Test login form required password validation.
+- [x] Task 556: Test login submit pending disabled state.
+- [x] Task 557: Test login success navigates to dashboard.
+- [x] Task 558: Test login failure renders safe error.
+- [x] Task 559: Test ProtectedRoute unauthenticated redirect.
+- [x] Task 560: Test ProtectedRoute authenticated render.
+- [x] Task 561: Test AppShell renders sidebar navigation.
+- [x] Task 562: Test AppShell renders tenant context.
+- [x] Task 563: Test AppShell logout action.
+- [x] Task 564: Test Dashboard loading state.
+- [x] Task 565: Test Dashboard empty state.
+- [x] Task 566: Test Dashboard REST error retry state.
+- [x] Task 567: Test Dashboard forbidden state.
+- [x] Task 568: Test Dashboard reconnecting state.
+- [x] Task 569: Test Dashboard disconnected state.
+- [x] Task 570: Test Dashboard populated state.
+- [x] Task 571: Test Computer list search control.
+- [x] Task 572: Test Computer list status filter.
+- [x] Task 573: Test Computer list sort control.
+- [x] Task 574: Test Computer list page size control.
+- [x] Task 575: Test Computer list previous page control.
+- [x] Task 576: Test Computer list next page control.
+- [x] Task 577: Test Computer table row detail action.
+- [x] Task 578: Test mobile computer card detail action.
+- [x] Task 579: Test detail drawer renders metadata.
+- [x] Task 580: Test detail drawer renders editable allowed fields.
+- [x] Task 581: Test detail drawer does not render forbidden editable fields.
+- [x] Task 582: Test detail update success feedback.
+- [x] Task 583: Test detail update rollback feedback.
+- [x] Task 584: Test reissue modal reason validation.
+- [x] Task 585: Test reissue modal pending disabled state.
+- [x] Task 586: Test reissue modal token reveal.
+- [x] Task 587: Test reissue modal copy action.
+- [x] Task 588: Test reissue modal clears token on close.
+- [x] Task 589: Test `401` computer list clears auth and redirects.
+- [x] Task 590: Test `403` computer list renders forbidden and keeps session.
+- [x] Task 591: Test update success replaces query cache data.
+- [x] Task 592: Test update failure rolls back query cache data.
+- [x] Task 593: Test reissue token does not enter query cache data.
+
+## 20. Realtime Tests
+
+- [x] Task 594: Create mocked Socket.IO client.
+- [x] Task 595: Mock socket connect event.
+- [x] Task 596: Mock socket reconnect event.
+- [x] Task 597: Mock socket disconnect event.
+- [x] Task 598: Mock watch tenant ack success.
+- [x] Task 599: Mock watch tenant ack failure.
+- [x] Task 600: Mock `computer:online` event.
+- [x] Task 601: Mock `computer:offline` event.
+- [x] Task 602: Test socket uses `clientType: "admin"`.
+- [x] Task 603: Test socket uses current access token.
+- [x] Task 604: Test socket emits `admin:watch-tenant` after connect.
+- [x] Task 605: Test socket emits `admin:watch-tenant` after reconnect.
+- [x] Task 606: Test snapshot populates presence map.
+- [x] Task 607: Test online event updates only matching computer.
+- [x] Task 608: Test offline event updates only matching computer.
+- [x] Task 609: Test event feed bound is enforced.
+- [x] Task 610: Test realtime event does not refetch list.
+- [x] Task 611: Test reconnect triggers one list refresh.
+- [x] Task 612: Test disconnected state does not mark all computers offline.
+
+## 21. Playwright E2E And Browser QA
+
+- [x] Task 613: Create Playwright config.
+- [x] Task 614: Configure Playwright web server command for frontend app.
+- [x] Task 615: Configure Chromium project.
+- [x] Task 616: Create E2E auth fixtures.
+- [x] Task 617: Create E2E computer list fixtures.
+- [x] Task 618: Create E2E computer detail fixtures.
+- [x] Task 619: Create E2E update success fixture.
+- [x] Task 620: Create E2E update failure fixture.
+- [x] Task 621: Create E2E reissue token fixture.
+- [x] Task 622: Create E2E forbidden fixture.
+- [x] Task 623: Create E2E rate-limited fixture.
+- [x] Task 624: Test login success in browser.
+- [x] Task 625: Test protected dashboard redirect in browser.
+- [x] Task 626: Test dashboard KPI rendering in browser.
+- [x] Task 627: Test realtime panel states in browser.
+- [x] Task 628: Test computers search in browser.
+- [x] Task 629: Test computers status filter in browser.
+- [x] Task 630: Test computers sorting in browser.
+- [x] Task 631: Test computers pagination in browser.
+- [x] Task 632: Test detail drawer open in browser.
+- [x] Task 633: Test mobile detail sheet open in browser.
+- [x] Task 634: Test status update success in browser.
+- [x] Task 635: Test update rollback feedback in browser.
+- [x] Task 636: Test token reissue reveal in browser.
+- [x] Task 637: Test token copy action in browser.
+- [x] Task 638: Test token clears after modal close in browser.
+- [x] Task 639: Test 1440px desktop layout.
+- [x] Task 640: Test 1024px laptop layout.
+- [x] Task 641: Test 768px tablet layout.
+- [x] Task 642: Test 375px mobile layout.
+- [x] Task 643: Test no horizontal scroll at 375px.
+- [x] Task 644: Test keyboard focus order on login.
+- [x] Task 645: Test keyboard focus order in shell navigation.
+- [x] Task 646: Test keyboard focus order in computer filters.
+- [x] Task 647: Test keyboard focus order in drawer/sheet.
+- [x] Task 648: Test keyboard focus order in reissue modal.
+- [x] Task 649: Test visible focus rings.
+- [x] Task 650: Test long token wrapping with copy button visible.
+
+## 22. Documentation And Manual Verification
+
+- [ ] Task 651: Create `web-admin/README.md`.
+- [ ] Task 652: Document frontend install command.
+- [ ] Task 653: Document frontend dev command.
+- [ ] Task 654: Document frontend build command.
+- [ ] Task 655: Document frontend typecheck command.
+- [ ] Task 656: Document frontend lint command.
+- [ ] Task 657: Document frontend unit test command.
+- [ ] Task 658: Document frontend E2E test command.
+- [ ] Task 659: Document required environment variables.
+- [ ] Task 660: Document that backend startup is manual.
+- [ ] Task 661: Document that DB commands are manual.
+- [ ] Task 662: Document that Prisma commands are manual.
+- [ ] Task 663: Document that migration commands are manual.
+- [ ] Task 664: Document manual login verification.
+- [ ] Task 665: Document manual dashboard verification.
+- [ ] Task 666: Document manual computer list verification.
+- [ ] Task 667: Document manual detail drawer/sheet verification.
+- [ ] Task 668: Document manual status/notes update verification.
+- [ ] Task 669: Document manual token reissue verification.
+- [ ] Task 670: Document manual Socket.IO admin verification.
+- [ ] Task 671: Document manual Client PC online/offline verification.
+- [ ] Task 672: Document manual reconnect verification.
+- [ ] Task 673: Document manual responsive verification at 1440px.
+- [ ] Task 674: Document manual responsive verification at 1024px.
+- [ ] Task 675: Document manual responsive verification at 768px.
+- [ ] Task 676: Document manual responsive verification at 375px.
+- [ ] Task 677: Document manual keyboard focus verification.
+- [ ] Task 678: Document manual focus ring verification.
+- [ ] Task 679: Document manual contrast verification.
+- [ ] Task 680: Record post-MVP refresh-token persistence decision.
+- [ ] Task 681: Record post-MVP `/computers/:id` deep-link decision.
+- [ ] Task 682: Record post-MVP staff read-only access decision.
+- [ ] Task 683: Record post-MVP production telemetry decision.
+- [ ] Task 684: Run final typecheck after implementation.
+- [ ] Task 685: Run final lint after implementation.
+- [ ] Task 686: Run final unit/component tests after implementation.
+- [ ] Task 687: Run final Playwright E2E tests after implementation.
+- [ ] Task 688: Run final production build after implementation.
