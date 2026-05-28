@@ -30,7 +30,7 @@ export class AssetsController {
 
   public async updateActive(request: Request, response: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = request.params;
+      const id = request.params.id as string;
       const { isActive } = request.body as { isActive: boolean };
       const data = await assetsService.toggleActive(
         request.authContext?.tenantId,
@@ -45,7 +45,7 @@ export class AssetsController {
 
   public async delete(request: Request, response: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = request.params;
+      const id = request.params.id as string;
       await assetsService.deleteAsset(request.authContext?.tenantId, id);
       response.status(200).json({ success: true, message: "Asset deleted successfully." });
     } catch (error) {

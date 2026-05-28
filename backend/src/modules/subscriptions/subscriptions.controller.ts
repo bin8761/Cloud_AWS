@@ -38,7 +38,7 @@ export class SubscriptionsController {
 
   public async update(request: Request, response: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = request.params;
+      const id = request.params.id as string;
       const { status, maxComputers, expiresAt } = request.body as {
         status?: "ACTIVE" | "EXPIRED" | "PENDING";
         maxComputers?: number;
