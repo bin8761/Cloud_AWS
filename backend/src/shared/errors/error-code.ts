@@ -6,4 +6,7 @@ export type ErrorCode =
   | "CONFLICT"
   | "TOO_MANY_REQUESTS"
   | "INTERNAL_ERROR"
-  | "DATABASE_ERROR";
+  | "DATABASE_ERROR"
+  | "BAD_REQUEST"
+  | "PAYMENT_REQUIRED";
+

@@ -61,9 +61,11 @@ model Tenant {
   createdAt                      DateTime     @default(now())
   updatedAt                      DateTime     @updatedAt
 
-  users     User[]
-  computers Computer[]
-  blockRules BlockRule[]
+  users        User[]
+  computers    Computer[]
+  subscription Subscription?
+  assets       LockScreenAsset[]
+  blockRules   BlockRule[]
 }
 
 model Computer {
@@ -182,4 +184,41 @@ model PendingTenantRegistration {
   @@index([adminEmail, consumedAt])
   @@index([tenantCode, consumedAt])
   @@index([expiresAt])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  PENDING
+}
+
+model Subscription {
+  id           String             @id @default(uuid())
+  tenantId     String             @unique
+  status       SubscriptionStatus @default(ACTIVE)
+  maxComputers Int                @default(20)
+  expiresAt    DateTime
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status, expiresAt])
+}
+
+model LockScreenAsset {
+  id        String   @id @default(uuid())
+  tenantId  String
+  fileName  String
+  filePath  String
+  fileSize  Int
+  mimeType  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, isActive])
 }

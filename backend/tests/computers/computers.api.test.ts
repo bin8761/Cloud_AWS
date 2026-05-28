@@ -137,6 +137,11 @@ const prismaMock = {
     create: vi.fn(),
     update: vi.fn(),
   },
+  subscription: {
+    findUnique: vi.fn(async () => null),
+    create: vi.fn(),
+    update: vi.fn(),
+  },
   $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
     callback(prismaMock),
   ),
@@ -222,6 +227,15 @@ beforeEach(async () => {
   prismaMock.computer.update.mockReset();
   prismaMock.computer.updateMany.mockReset();
   prismaMock.computer.updateMany.mockResolvedValue({ count: 0 });
+
+  prismaMock.subscription.findUnique.mockReset();
+  prismaMock.subscription.findUnique.mockResolvedValue({
+    id: "sub_1",
+    tenantId: "tenant_1",
+    status: "ACTIVE",
+    maxComputers: 20,
+    expiresAt: new Date("2030-01-01T00:00:00.000Z"),
+  });
 
   vi.doMock("../../src/shared/prisma/prisma.client", () => ({
     prisma: prismaMock,

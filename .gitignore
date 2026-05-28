@@ -21,5 +21,9 @@ web-admin/vite-dev*.log
 backend/coverage/
 backend/.nyc_output/
 
+# Uploads
+backend/public/uploads/lockscreen/*
+!backend/public/uploads/lockscreen/.gitkeep
+
 rule
 CONTINUITY.md
