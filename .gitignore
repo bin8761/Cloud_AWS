@@ -1,13 +1,21 @@
 # Foundation backend ignores
+.env
+.env.*
 backend/.env
 backend/.env.*
 !backend/.env.example
 
 # Dependencies
 backend/node_modules/
+web-admin/node_modules/
 
 # Build output
 backend/dist/
+backend/backend-dev*.log
+web-admin/dist/
+web-admin/tsconfig.tsbuildinfo
+web-admin/.vite-dev-job
+web-admin/vite-dev*.log
 
 # Test coverage
 backend/coverage/

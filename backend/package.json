@@ -11,7 +11,7 @@
         "test:auth:live:all": "vitest run tests/auth/auth.api.live.test.ts tests/auth/auth.api.live.security.test.ts",
         "test:auth:live:success:manual": "powershell -ExecutionPolicy Bypass -File scripts/auth-live-success.ps1",
         "test:watch": "vitest",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsc --noEmit -p tsconfig.json",
         "prisma:migrate": "npx prisma migrate dev",
         "prisma:generate": "npx prisma generate",
         "start": "node dist/server.js"

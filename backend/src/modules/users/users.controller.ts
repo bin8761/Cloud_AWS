@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../shared/errors/app-error";
 import type { AuthContext } from "../../shared/middleware/auth-context";
 import { usersService } from "./users.service";
+import type { ListStaffUsersInput } from "./users.types";
 
 type StaffUserIdParams = {
   id: string;
@@ -60,7 +61,7 @@ export class UsersController {
           ...authContext,
           requestId: request.requestId,
         },
-        request.query,
+        request.query as unknown as ListStaffUsersInput,
       );
 
       response.status(200).json({

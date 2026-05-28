@@ -1,5 +1,6 @@
 ﻿import { VerificationPurpose } from "@prisma/client";
 import nodemailer, { type Transporter } from "nodemailer";
+import type SMTPTransport from "nodemailer/lib/smtp-transport";
 
 import { env } from "../../config/env.js";
 
@@ -60,7 +61,7 @@ export class SmtpEmailSender implements EmailSender {
 }
 
 export const createSmtpTransporter = (
-  options: nodemailer.TransportOptions,
+  options: SMTPTransport.Options,
 ): Transporter => {
   return nodemailer.createTransport(options);
 };

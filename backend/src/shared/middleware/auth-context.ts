@@ -9,6 +9,7 @@ export type AuthContext = {
   role?: AuthRole;
   tokenType?: AuthTokenType;
   computerId?: string;
+  requestId?: string;
 };
 
 export const authContextMiddleware: RequestHandler = (req, _res, next) => {

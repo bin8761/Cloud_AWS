@@ -1,90 +1,63 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, FormEvent, useMemo } from "react";
 import {
+  Ban,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
+  LogOut,
+  Plus,
+  RefreshCw,
+  Search,
+  Settings,
+  Trash2,
+  Upload,
+  X,
   Image as ImageIcon,
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Upload,
-  Trash2,
-  RefreshCw,
   Sliders,
   ShieldCheck,
   Server,
   Layers,
   Monitor,
-  Plus,
   Edit,
-  X,
-  Check,
 } from "lucide-react";
 import "./App.css";
+import {
+  batchCreateBlockRules,
+  createBlockRule,
+  deleteBlockRule,
+  getCurrentUser,
+  listBlockRules,
+  login as loginRequest,
+  logout as logoutRequest,
+  updateBlockRule,
+} from "./api";
+import type {
+  BlockRule,
+  BlockRuleSort,
+  BlockRuleStatus,
+  BlockRuleType,
+  CurrentUserResponse,
+  CreateBlockRuleInput,
+} from "./types";
 
-// Dynamic API Host resolver
-const API_BASE = window.location.origin.includes("5173")
-  ? "http://localhost:3000"
-  : window.location.origin;
+type ModalState =
+  | { kind: "create" }
+  | { kind: "edit"; rule: BlockRule }
+  | { kind: "batch" }
+  | null;
 
-// Default beautiful wallpapers to show if no images are uploaded
-const MOCK_IMAGES = [
-  {
-    id: "mock-1",
-    fileName: "Cyberpunk Gaming Room.jpg",
-    filePath: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop",
-    fileSize: 1048576 * 1.5, // 1.5MB
-    mimeType: "image/jpeg",
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "mock-2",
-    fileName: "Sci-Fi Cyber City.jpg",
-    filePath: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600&auto=format&fit=crop",
-    fileSize: 1048576 * 2.3, // 2.3MB
-    mimeType: "image/jpeg",
-    isActive: true,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "mock-3",
-    fileName: "Dark Abstract Liquid.jpg",
-    filePath: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop",
-    fileSize: 1048576 * 0.8, // 0.8MB
-    mimeType: "image/jpeg",
-    isActive: false,
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-  },
-];
-
-// Initial mock subscriptions
-const MOCK_SUBSCRIPTIONS = [
-  {
-    id: "sub-1",
-    tenantId: "tenant_starlight",
-    tenantName: "Net Cyber Starlight",
-    status: "ACTIVE",
-    maxComputers: 30,
-    currentComputers: 25,
-    expiresAt: new Date(Date.now() + 86400000 * 45).toISOString(), // 45 days remaining
-  },
-  {
-    id: "sub-2",
-    tenantId: "tenant_arena",
-    tenantName: "Gaming Arena X",
-    status: "ACTIVE",
-    maxComputers: 15,
-    currentComputers: 12,
-    expiresAt: new Date(Date.now() + 86400000 * 2).toISOString(), // 2 days remaining (expires soon)
-  },
-  {
-    id: "sub-3",
-    tenantId: "tenant_pro",
-    tenantName: "Pro Gamer Center",
-    status: "EXPIRED",
-    maxComputers: 40,
-    currentComputers: 40,
-    expiresAt: new Date(Date.now() - 86400000 * 5).toISOString(), // Expired 5 days ago
-  },
-];
+type RuleDraft = {
+  type: BlockRuleType;
+  value: string;
+  label: string;
+  reason: string;
+  status: BlockRuleStatus;
+  priority: string;
+};
 
 interface Asset {
   id: string;
@@ -106,32 +79,182 @@ interface Subscription {
   expiresAt: string;
 }
 
-function App() {
-  // Navigation & Role States
-  const [role, setRole] = useState<"shop_admin" | "super_admin">("shop_admin");
-  const [activeTab, setActiveTab] = useState<"assets" | "subscription" | "all_subscriptions">("assets");
+const PAGE_SIZE = 20;
+const TYPE_OPTIONS: BlockRuleType[] = ["URL", "PROCESS", "KEYWORD"];
+const STATUS_OPTIONS: BlockRuleStatus[] = ["ACTIVE", "DISABLED"];
+const SORT_OPTIONS: Array<{ value: BlockRuleSort; label: string }> = [
+  { value: "createdAt:desc", label: "Mới nhất" },
+  { value: "createdAt:asc", label: "Cũ nhất" },
+  { value: "priority:desc", label: "Độ ưu tiên cao" },
+  { value: "priority:asc", label: "Độ ưu tiên thấp" },
+];
+
+const MOCK_IMAGES = [
+  {
+    id: "mock-1",
+    fileName: "Cyberpunk Gaming Room.jpg",
+    filePath: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop",
+    fileSize: 1048576 * 1.5,
+    mimeType: "image/jpeg",
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "mock-2",
+    fileName: "Sci-Fi Cyber City.jpg",
+    filePath: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=600&auto=format&fit=crop",
+    fileSize: 1048576 * 2.3,
+    mimeType: "image/jpeg",
+    isActive: true,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: "mock-3",
+    fileName: "Dark Abstract Liquid.jpg",
+    filePath: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop",
+    fileSize: 1048576 * 0.8,
+    mimeType: "image/jpeg",
+    isActive: false,
+    createdAt: new Date(Date.now() - 172800000).toISOString(),
+  },
+];
+
+const MOCK_SUBSCRIPTIONS = [
+  {
+    id: "sub-1",
+    tenantId: "tenant_starlight",
+    tenantName: "Net Cyber Starlight",
+    status: "ACTIVE",
+    maxComputers: 30,
+    currentComputers: 25,
+    expiresAt: new Date(Date.now() + 86400000 * 45).toISOString(),
+  },
+  {
+    id: "sub-2",
+    tenantId: "tenant_arena",
+    tenantName: "Gaming Arena X",
+    status: "ACTIVE",
+    maxComputers: 15,
+    currentComputers: 12,
+    expiresAt: new Date(Date.now() + 86400000 * 2).toISOString(),
+  },
+  {
+    id: "sub-3",
+    tenantId: "tenant_pro",
+    tenantName: "Pro Gamer Center",
+    status: "EXPIRED",
+    maxComputers: 40,
+    currentComputers: 40,
+    expiresAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+  },
+];
+
+const defaultDraft = (): RuleDraft => ({
+  type: "URL",
+  value: "",
+  label: "",
+  reason: "",
+  status: "ACTIVE",
+  priority: "0",
+});
+
+const draftFromRule = (rule: BlockRule): RuleDraft => ({
+  type: rule.type,
+  value: rule.value,
+  label: rule.label ?? "",
+  reason: rule.reason ?? "",
+  status: rule.status,
+  priority: String(rule.priority),
+});
+
+const formatDate = (value: string): string => {
+  try {
+    return new Intl.DateTimeFormat("vi-VN", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+};
+
+const parsePriority = (value: string): number | undefined => {
+  if (!value.trim()) return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 9999) {
+    throw new Error("Độ ưu tiên phải là số nguyên từ 0 tới 9999.");
+  }
+  return parsed;
+};
+
+const toCreateInput = (draft: RuleDraft): CreateBlockRuleInput => ({
+  type: draft.type,
+  value: draft.value.trim(),
+  label: draft.label.trim() || undefined,
+  reason: draft.reason.trim() || undefined,
+  priority: parsePriority(draft.priority),
+});
+
+const readInitialApiBase = (): string => {
+  const stored = localStorage.getItem("cloudcms.apiBase");
+  if (stored) return stored;
+  return window.location.origin.includes("5173")
+    ? "http://localhost:3000"
+    : window.location.origin;
+};
+
+export function App() {
+  const [apiBase, setApiBase] = useState(readInitialApiBase);
+  const [accessToken, setAccessToken] = useState(
+    () => localStorage.getItem("cloudcms.accessToken") ?? "",
+  );
+  const [refreshToken, setRefreshToken] = useState(
+    () => localStorage.getItem("cloudcms.refreshToken") ?? "",
+  );
+  const [session, setSession] = useState<CurrentUserResponse | null>(null);
+  const [loginEmail, setLoginEmail] = useState(
+    () => localStorage.getItem("cloudcms.loginEmail") ?? "",
+  );
+  const [loginPassword, setLoginPassword] = useState("");
   
-  // App Modes and Statuses
+  // Navigation active tab
+  const [activeTab, setActiveTab] = useState<"assets" | "subscription" | "all_subscriptions" | "block_rules">("assets");
+
+  // Connection & Offline simulated mode
   const [isOnline, setIsOnline] = useState<boolean>(false);
   const [checkingConn, setCheckingConn] = useState<boolean>(true);
-  const [tenantId, setTenantId] = useState<string>("tenant_starlight"); // Simulated active tenant
+  const [tenantId, setTenantId] = useState<string>("tenant_starlight");
   const [tenantName, setTenantName] = useState<string>("Net Cyber Starlight");
 
-  // Core Data States
+  // Block Rules State
+  const [items, setItems] = useState<BlockRule[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [q, setQ] = useState("");
+  const [typeFilter, setTypeFilter] = useState<BlockRuleType | "">("");
+  const [statusFilter, setStatusFilter] = useState<BlockRuleStatus | "">("");
+  const [sort, setSort] = useState<BlockRuleSort>("createdAt:desc");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [modal, setModal] = useState<ModalState>(null);
+  const [draft, setDraft] = useState<RuleDraft>(defaultDraft);
+  const [batchType, setBatchType] = useState<BlockRuleType>("URL");
+  const [batchPriority, setBatchPriority] = useState("0");
+  const [batchText, setBatchText] = useState("");
+
+  // Assets & Subscription States
   const [assets, setAssets] = useState<Asset[]>([]);
   const [mySubscription, setMySubscription] = useState<Subscription | null>(null);
   const [allSubscriptions, setAllSubscriptions] = useState<Subscription[]>([]);
-  
-  // UI Feedbacks
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "warning" } | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
 
-  // Modals States
+  // Subscriptions Modal States
   const [showAddSubModal, setShowAddSubModal] = useState<boolean>(false);
   const [showEditSubModal, setShowEditSubModal] = useState<boolean>(false);
   const [selectedSub, setSelectedSub] = useState<Subscription | null>(null);
-
-  // Form States
   const [formTenantId, setFormTenantId] = useState("");
   const [formTenantName, setFormTenantName] = useState("");
   const [formMaxComputers, setFormMaxComputers] = useState<number>(20);
@@ -139,6 +262,16 @@ function App() {
   const [formStatus, setFormStatus] = useState("ACTIVE");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const canQuery =
+    apiBase.trim().length > 0 &&
+    accessToken.trim().length > 0 &&
+    session?.user.role === "shop_admin";
+
+  const activeCount = useMemo(
+    () => items.filter((rule) => rule.status === "ACTIVE").length,
+    [items],
+  );
 
   // Auto-clear Toast
   useEffect(() => {
@@ -152,7 +285,7 @@ function App() {
   const checkConnection = async () => {
     setCheckingConn(true);
     try {
-      const res = await fetch(`${API_BASE}/health`, { method: "GET" });
+      const res = await fetch(`${apiBase}/health`, { method: "GET" });
       if (res.ok) {
         setIsOnline(true);
       } else {
@@ -167,22 +300,134 @@ function App() {
 
   useEffect(() => {
     checkConnection();
-    // Periodically ping backend
     const interval = setInterval(checkConnection, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [apiBase]);
 
-  // Fetch initial data based on Role and Server Connection Status
+  // Sync token to localstorage
   useEffect(() => {
-    if (isOnline) {
-      // Fetch using Backend APIs
-      fetchAssets();
-      fetchMySubscription();
-      if (role === "super_admin") {
-        fetchAllSubscriptions();
+    localStorage.setItem("cloudcms.apiBase", apiBase);
+    localStorage.setItem("cloudcms.accessToken", accessToken);
+    localStorage.setItem("cloudcms.refreshToken", refreshToken);
+    localStorage.setItem("cloudcms.loginEmail", loginEmail);
+  }, [apiBase, accessToken, refreshToken, loginEmail]);
+
+  // Retrieve current user on token load
+  useEffect(() => {
+    if (!accessToken.trim()) {
+      setSession(null);
+      return;
+    }
+
+    getCurrentUser(apiBase, accessToken)
+      .then((data) => {
+        setSession(data);
+        setError(null);
+      })
+      .catch((caught) => {
+        setSession(null);
+        setAccessToken("");
+        setRefreshToken("");
+        setError(caught instanceof Error ? caught.message : "Phiên đăng nhập hết hạn.");
+      });
+  }, [apiBase, accessToken]);
+
+  // Sync navigation tabs based on user role
+  useEffect(() => {
+    if (session) {
+      if (session.user.role === "super_admin") {
+        setActiveTab("all_subscriptions");
+      } else {
+        setActiveTab("assets");
+      }
+    }
+  }, [session]);
+
+  // Load block rules list
+  const loadRules = async (nextPage = page) => {
+    if (!canQuery) {
+      setItems([]);
+      setTotal(0);
+      setTotalPages(1);
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await listBlockRules(apiBase, accessToken, {
+        page: nextPage,
+        pageSize: PAGE_SIZE,
+        q,
+        sort,
+        type: typeFilter || undefined,
+        status: statusFilter || undefined,
+      });
+      setItems(result.items);
+      setPage(result.page);
+      setTotal(result.total);
+      setTotalPages(Math.max(1, result.totalPages));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Không thể tải danh sách chặn.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Trigger loading block rules
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadRules(1);
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [apiBase, accessToken, session?.user.role, q, sort, typeFilter, statusFilter, activeTab]);
+
+  // Load assets and subscriptions
+  const loadAssetsAndSubscriptions = async () => {
+    if (isOnline && accessToken) {
+      // Load Wallpapers
+      try {
+        const res = await fetch(`${apiBase}/api/assets`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          setAssets(data.data);
+        }
+      } catch (e) {
+        console.error("Lỗi khi tải hình nền", e);
+      }
+
+      // Load My Subscription
+      try {
+        const res = await fetch(`${apiBase}/api/subscriptions/me`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMySubscription(data.data);
+        }
+      } catch (e) {
+        console.error("Lỗi khi tải gói bản quyền", e);
+      }
+
+      // Load All Subscriptions (Super Admin)
+      if (session?.user.role === "super_admin") {
+        try {
+          const res = await fetch(`${apiBase}/api/subscriptions`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const data = await res.json();
+          if (data.success) {
+            setAllSubscriptions(data.data);
+          }
+        } catch (e) {
+          console.error("Lỗi khi tải tất cả bản quyền", e);
+        }
       }
     } else {
-      // Offline / Demo Mode: Hydrate from localStorage or default mocks
+      // Offline/Demo Mode fallback
       const localAssets = localStorage.getItem("cloudcms_assets");
       if (localAssets) {
         setAssets(JSON.parse(localAssets));
@@ -200,125 +445,107 @@ function App() {
       }
       setAllSubscriptions(currentAllSubs);
 
-      // Find my active tenant subscription
+      // Current active tenant
       const found = currentAllSubs.find((s) => s.tenantId === tenantId);
       if (found) {
         setMySubscription(found);
-      } else {
-        const fallbackSub = currentAllSubs[0];
-        setTenantId(fallbackSub.tenantId);
-        setTenantName(fallbackSub.tenantName || "Net Cyber Starlight");
-        setMySubscription(fallbackSub);
+      } else if (currentAllSubs.length > 0) {
+        const first = currentAllSubs[0];
+        setTenantId(first.tenantId);
+        setTenantName(first.tenantName || first.tenantId);
+        setMySubscription(first);
       }
     }
-  }, [isOnline, role, tenantId]);
+  };
 
-  // Sync tab layout when role changes
   useEffect(() => {
-    if (role === "super_admin") {
-      setActiveTab("all_subscriptions");
-    } else {
-      setActiveTab("assets");
-    }
-  }, [role]);
+    void loadAssetsAndSubscriptions();
+  }, [isOnline, accessToken, session, tenantId, activeTab]);
 
-  // Show a visual notification
   const showToast = (message: string, type: "success" | "error" | "warning" = "success") => {
     setToast({ message, type });
   };
 
-  // --- API / Local state operations ---
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    setMessage(null);
 
-  const fetchAssets = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/assets`, {
-        headers: {
-          Authorization: `Bearer mock-token-for-dev`, // The actual project uses real tokens
-        },
+      const result = await loginRequest(apiBase, {
+        email: loginEmail,
+        password: loginPassword,
       });
-      const data = await res.json();
-      if (data.success) {
-        setAssets(data.data);
-      }
-    } catch (e) {
-      console.error("Failed to fetch assets from backend", e);
+      setAccessToken(result.accessToken);
+      setRefreshToken(result.refreshToken);
+      setSession({ user: result.user, tenant: null });
+      setLoginPassword("");
+      showToast("Đăng nhập thành công!", "success");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Đăng nhập thất bại.");
+    } finally {
+      setBusy(false);
     }
   };
 
-  const fetchMySubscription = async () => {
+  const handleLogout = async () => {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+
     try {
-      const res = await fetch(`${API_BASE}/api/subscriptions/me`, {
-        headers: {
-          Authorization: `Bearer mock-token-for-dev`,
-        },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMySubscription(data.data);
+      if (refreshToken.trim()) {
+        await logoutRequest(apiBase, refreshToken);
       }
-    } catch (e) {
-      console.error("Failed to fetch subscription from backend", e);
+    } catch {
+      // Local session cleanup still wins
+    } finally {
+      setAccessToken("");
+      setRefreshToken("");
+      setSession(null);
+      setItems([]);
+      setLoginPassword("");
+      setBusy(false);
+      showToast("Đã đăng xuất hệ thống.", "warning");
     }
   };
 
-  const fetchAllSubscriptions = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/subscriptions`, {
-        headers: {
-          Authorization: `Bearer mock-token-for-dev`,
-        },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAllSubscriptions(data.data);
-      }
-    } catch (e) {
-      console.error("Failed to fetch all subscriptions from backend", e);
-    }
-  };
-
-  // Handle image upload with validation
+  // Wallpaper Handlers
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     const file = files[0];
-
-    // Client-side validations (Person 5 specifications)
-    const allowedExtensions = [".png", ".jpg", ".jpeg"];
     const fileExt = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
     
-    if (!allowedExtensions.includes(fileExt)) {
-      showToast("Định dạng tệp không được hỗ trợ. Chỉ chấp nhận ảnh JPG, JPEG, PNG.", "error");
+    if (![".png", ".jpg", ".jpeg"].includes(fileExt)) {
+      showToast("Chỉ chấp nhận ảnh JPG, JPEG, PNG.", "error");
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      showToast(`Tệp quá lớn (${(file.size / 1024 / 1024).toFixed(2)} MB). Dung lượng tối đa là 5 MB.`, "error");
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Tệp quá lớn. Dung lượng tối đa là 5 MB.", "error");
       return;
     }
 
     setUploading(true);
 
-    if (isOnline) {
-      // Backend Upload
+    if (isOnline && accessToken) {
       const formData = new FormData();
       formData.append("image", file);
 
       try {
-        const res = await fetch(`${API_BASE}/api/assets/upload`, {
+        const res = await fetch(`${apiBase}/api/assets/upload`, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer mock-token-for-dev`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
           body: formData,
         });
 
         const data = await res.json();
         if (data.success) {
           showToast("Tải ảnh màn hình khóa lên thành công!");
-          fetchAssets();
+          void loadAssetsAndSubscriptions();
         } else {
           showToast(data.error?.message || "Tải ảnh thất bại.", "error");
         }
@@ -328,13 +555,12 @@ function App() {
         setUploading(false);
       }
     } else {
-      // Local Mock Upload via FileReader
       const reader = new FileReader();
       reader.onload = (e) => {
         const newAsset: Asset = {
           id: `local-${Date.now()}`,
           fileName: file.name,
-          filePath: e.target?.result as string || "https://images.unsplash.com/photo-1542751371-adc38448a05e",
+          filePath: (e.target?.result as string) || "",
           fileSize: file.size,
           mimeType: file.type,
           isActive: true,
@@ -347,33 +573,28 @@ function App() {
         showToast("Tải ảnh lên giả lập thành công!");
         setUploading(false);
       };
-      reader.onerror = () => {
-        showToast("Đọc tệp tin thất bại.", "error");
-        setUploading(false);
-      };
       reader.readAsDataURL(file);
     }
   };
 
-  // Toggle active status
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
     const nextStatus = !currentStatus;
 
-    if (isOnline) {
+    if (isOnline && accessToken) {
       try {
-        const res = await fetch(`${API_BASE}/api/assets/${id}/active`, {
+        const res = await fetch(`${apiBase}/api/assets/${id}/active`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer mock-token-for-dev`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({ isActive: nextStatus }),
         });
 
         const data = await res.json();
         if (data.success) {
-          showToast(nextStatus ? "Đã kích hoạt ảnh hiển thị." : "Đã hủy kích hoạt ảnh.");
-          fetchAssets();
+          showToast(nextStatus ? "Kích hoạt ảnh hiển thị thành công." : "Hủy kích hoạt ảnh thành công.");
+          void loadAssetsAndSubscriptions();
         } else {
           showToast(data.error?.message || "Cập nhật thất bại.", "error");
         }
@@ -381,31 +602,27 @@ function App() {
         showToast("Lỗi kết nối khi cập nhật trạng thái.", "error");
       }
     } else {
-      // Local Mock Update
       const updated = assets.map((a) => (a.id === id ? { ...a, isActive: nextStatus } : a));
       setAssets(updated);
       localStorage.setItem("cloudcms_assets", JSON.stringify(updated));
-      showToast(nextStatus ? "Kích hoạt ảnh màn hình chờ (Giả lập)." : "Tắt kích hoạt ảnh (Giả lập).");
+      showToast(nextStatus ? "Kích hoạt ảnh màn hình chờ (Demo)" : "Tắt kích hoạt ảnh (Demo)");
     }
   };
 
-  // Delete asset
   const handleDeleteAsset = async (id: string) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa hình nền này?")) return;
 
-    if (isOnline) {
+    if (isOnline && accessToken) {
       try {
-        const res = await fetch(`${API_BASE}/api/assets/${id}`, {
+        const res = await fetch(`${apiBase}/api/assets/${id}`, {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer mock-token-for-dev`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
         });
 
         const data = await res.json();
         if (data.success) {
           showToast("Đã xóa hình nền thành công.");
-          fetchAssets();
+          void loadAssetsAndSubscriptions();
         } else {
           showToast(data.error?.message || "Xóa hình nền thất bại.", "error");
         }
@@ -413,15 +630,123 @@ function App() {
         showToast("Lỗi kết nối khi xóa hình nền.", "error");
       }
     } else {
-      // Local Mock Delete
       const updated = assets.filter((a) => a.id !== id);
       setAssets(updated);
       localStorage.setItem("cloudcms_assets", JSON.stringify(updated));
-      showToast("Đã xóa hình nền (Giả lập).");
+      showToast("Đã xóa hình nền (Demo).");
     }
   };
 
-  // Super Admin: Create subscription
+  // Block Rules CRUD
+  const openCreate = () => {
+    setDraft(defaultDraft());
+    setModal({ kind: "create" });
+  };
+
+  const openEdit = (rule: BlockRule) => {
+    setDraft(draftFromRule(rule));
+    setModal({ kind: "edit", rule });
+  };
+
+  const closeModal = () => {
+    setModal(null);
+    setDraft(defaultDraft());
+    setBatchText("");
+  };
+
+  const handleRuleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+
+    try {
+      if (modal?.kind === "edit") {
+        await updateBlockRule(apiBase, accessToken, modal.rule.id, {
+          ...toCreateInput(draft),
+          status: draft.status,
+        });
+        showToast("Đã cập nhật quy tắc chặn.", "success");
+      } else {
+        await createBlockRule(apiBase, accessToken, toCreateInput(draft));
+        showToast("Đã tạo quy tắc chặn mới.", "success");
+      }
+      closeModal();
+      void loadRules(1);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Lưu quy tắc thất bại.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleBatchSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const values = batchText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (values.length === 0) {
+      setError("Dữ liệu nhập hàng loạt rỗng.");
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+
+    try {
+      const priority = parsePriority(batchPriority);
+      await batchCreateBlockRules(
+        apiBase,
+        accessToken,
+        values.map((value) => ({
+          type: batchType,
+          value,
+          priority,
+        })),
+      );
+      showToast(`Đã tạo thành công ${values.length} quy tắc.`, "success");
+      closeModal();
+      void loadRules(1);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Nhập hàng loạt thất bại.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleStatus = async (rule: BlockRule) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await updateBlockRule(apiBase, accessToken, rule.id, {
+        status: rule.status === "ACTIVE" ? "DISABLED" : "ACTIVE",
+      });
+      void loadRules(page);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Không thể đổi trạng thái.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeRule = async (rule: BlockRule) => {
+    if (!window.confirm(`Xóa quy tắc chặn cho: ${rule.value}?`)) return;
+
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteBlockRule(apiBase, accessToken, rule.id);
+      showToast("Đã xóa quy tắc chặn.", "success");
+      void loadRules(page);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Xóa quy tắc thất bại.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Subscription Creators/Updaters (Super Admin only)
   const handleCreateSubscription = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTenantId || !formTenantName || !formExpiresAt) {
@@ -436,13 +761,13 @@ function App() {
       expiresAt: new Date(formExpiresAt).toISOString(),
     };
 
-    if (isOnline) {
+    if (isOnline && accessToken) {
       try {
-        const res = await fetch(`${API_BASE}/api/subscriptions`, {
+        const res = await fetch(`${apiBase}/api/subscriptions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer mock-token-for-dev`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify(payload),
         });
@@ -450,7 +775,7 @@ function App() {
         const data = await res.json();
         if (data.success) {
           showToast("Cấp bản quyền phòng máy thành công!");
-          fetchAllSubscriptions();
+          void loadAssetsAndSubscriptions();
           setShowAddSubModal(false);
           resetSubForm();
         } else {
@@ -460,7 +785,6 @@ function App() {
         showToast("Lỗi kết nối khi đăng ký bản quyền.", "error");
       }
     } else {
-      // Local Mock Create
       const newSub: Subscription = {
         id: `sub-${Date.now()}`,
         tenantId: formTenantId,
@@ -474,13 +798,12 @@ function App() {
       const updated = [...allSubscriptions, newSub];
       setAllSubscriptions(updated);
       localStorage.setItem("cloudcms_all_subscriptions", JSON.stringify(updated));
-      showToast("Đăng ký bản quyền mới (Giả lập) thành công!");
+      showToast("Đăng ký bản quyền mới (Demo) thành công!");
       setShowAddSubModal(false);
       resetSubForm();
     }
   };
 
-  // Super Admin: Update subscription
   const handleUpdateSubscription = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSub || !formExpiresAt) {
@@ -494,13 +817,13 @@ function App() {
       expiresAt: new Date(formExpiresAt).toISOString(),
     };
 
-    if (isOnline) {
+    if (isOnline && accessToken) {
       try {
-        const res = await fetch(`${API_BASE}/api/subscriptions/${selectedSub.id}`, {
+        const res = await fetch(`${apiBase}/api/subscriptions/${selectedSub.id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer mock-token-for-dev`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify(payload),
         });
@@ -508,7 +831,7 @@ function App() {
         const data = await res.json();
         if (data.success) {
           showToast("Gia hạn và cập nhật bản quyền thành công!");
-          fetchAllSubscriptions();
+          void loadAssetsAndSubscriptions();
           setShowEditSubModal(false);
           resetSubForm();
         } else {
@@ -518,7 +841,6 @@ function App() {
         showToast("Lỗi kết nối khi cập nhật gói.", "error");
       }
     } else {
-      // Local Mock Update
       const updated = allSubscriptions.map((s) =>
         s.id === selectedSub.id
           ? {
@@ -531,7 +853,7 @@ function App() {
       );
       setAllSubscriptions(updated);
       localStorage.setItem("cloudcms_all_subscriptions", JSON.stringify(updated));
-      showToast("Gia hạn bản quyền (Giả lập) thành công!");
+      showToast("Gia hạn bản quyền (Demo) thành công!");
       setShowEditSubModal(false);
       resetSubForm();
     }
@@ -552,23 +874,11 @@ function App() {
     setFormTenantName(sub.tenantName || sub.tenantId);
     setFormMaxComputers(sub.maxComputers);
     setFormStatus(sub.status);
-    // Format expiration date for HTML input type datetime-local
     const expiryDate = new Date(sub.expiresAt);
     const offset = expiryDate.getTimezoneOffset();
     const localDate = new Date(expiryDate.getTime() - offset * 60 * 1000);
     setFormExpiresAt(localDate.toISOString().slice(0, 16));
     setShowEditSubModal(true);
-  };
-
-  // Helper date conversions
-  const formatDate = (isoString: string) => {
-    return new Date(isoString).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   const getRemainingDays = (expiresAtStr: string) => {
@@ -583,7 +893,6 @@ function App() {
     return `${days} ngày`;
   };
 
-  // Switch demo tenant
   const handleTenantChange = (newId: string) => {
     const found = allSubscriptions.find((s) => s.tenantId === newId);
     if (found) {
@@ -593,11 +902,97 @@ function App() {
     }
   };
 
+  // If not logged in, render the login card
+  if (!session) {
+    return (
+      <div className="modal-overlay" style={{ background: "radial-gradient(circle at center, #111827 0%, #030712 100%)" }}>
+        <form className="modal-content animate-fade-in" onSubmit={(event) => void handleLogin(event)} style={{ maxWidth: "420px", padding: "40px" }}>
+          <div style={{ textAlign: "center", marginBottom: "8px" }}>
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, var(--primary), var(--accent-purple))",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontWeight: 800,
+                fontSize: "24px",
+                marginBottom: "16px",
+                boxShadow: "0 8px 24px rgba(99, 102, 241, 0.4)",
+              }}
+            >
+              C
+            </div>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "28px", fontWeight: 700, background: "linear-gradient(135deg, #fff 30%, var(--text-secondary) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              CloudCMS Dashboard
+            </h2>
+            <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
+              Quản lý phòng máy &amp; chính sách chặn tập trung
+            </p>
+          </div>
+
+          {error && (
+            <div className="subs-alert-banner" style={{ background: "var(--danger-glow)", borderColor: "var(--danger)", color: "#fca5a5", padding: "12px 16px", fontSize: "13px" }}>
+              <XCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="form-group">
+            <label className="form-label">API Base URL</label>
+            <input
+              value={apiBase}
+              onChange={(event) => setApiBase(event.target.value)}
+              className="form-input"
+              placeholder="http://localhost:3000"
+              spellCheck={false}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Email</label>
+            <input
+              value={loginEmail}
+              onChange={(event) => setLoginEmail(event.target.value)}
+              type="email"
+              className="form-input"
+              placeholder="admin@example.com"
+              autoComplete="username"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Mật khẩu</label>
+            <input
+              value={loginPassword}
+              onChange={(event) => setLoginPassword(event.target.value)}
+              type="password"
+              className="form-input"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+
+          <button className="btn-glow" type="submit" disabled={busy} style={{ width: "100%", justifyContent: "center", marginTop: "12px" }}>
+            {busy ? "Đang kết nối..." : "Đăng nhập hệ thống"}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // Dashboard layout
   return (
     <div className="app-container">
-      {/* Toast Alert */}
+      {/* Toast Notification */}
       {toast && (
-        <div className={`modal-overlay`} style={{ background: "transparent", pointerEvents: "none" }}>
+        <div className="modal-overlay" style={{ background: "transparent", pointerEvents: "none" }}>
           <div
             className="glass-panel animate-fade-in"
             style={{
@@ -627,7 +1022,7 @@ function App() {
         </div>
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar Panel */}
       <aside className="sidebar">
         <div className="sidebar-brand">
           <div
@@ -649,50 +1044,52 @@ function App() {
           <span className="sidebar-logo">CloudCMS</span>
         </div>
 
-        {/* Navigation menu */}
+        {/* Sidebar Nav links */}
         <nav style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span className="role-badge-title" style={{ paddingLeft: "16px", marginBottom: "8px" }}>Menu chủ quán</span>
-            <button
-              className={`menu-item ${activeTab === "assets" && role === "shop_admin" ? "active" : ""}`}
-              onClick={() => {
-                setRole("shop_admin");
-                setActiveTab("assets");
-              }}
-            >
-              <ImageIcon size={18} />
-              Màn hình khóa
-            </button>
-            <button
-              className={`menu-item ${activeTab === "subscription" && role === "shop_admin" ? "active" : ""}`}
-              onClick={() => {
-                setRole("shop_admin");
-                setActiveTab("subscription");
-              }}
-            >
-              <Layers size={18} />
-              Gói bản quyền
-            </button>
-          </div>
+          {session.user.role === "shop_admin" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span className="role-badge-title" style={{ paddingLeft: "16px", marginBottom: "8px" }}>Menu chủ quán</span>
+              <button
+                className={`menu-item ${activeTab === "assets" ? "active" : ""}`}
+                onClick={() => setActiveTab("assets")}
+              >
+                <ImageIcon size={18} />
+                Màn hình khóa
+              </button>
+              <button
+                className={`menu-item ${activeTab === "block_rules" ? "active" : ""}`}
+                onClick={() => setActiveTab("block_rules")}
+              >
+                <Ban size={18} />
+                Quản lý chặn
+              </button>
+              <button
+                className={`menu-item ${activeTab === "subscription" ? "active" : ""}`}
+                onClick={() => setActiveTab("subscription")}
+              >
+                <Layers size={18} />
+                Gói bản quyền
+              </button>
+            </div>
+          )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span className="role-badge-title" style={{ paddingLeft: "16px", marginBottom: "8px" }}>Hệ thống</span>
-            <button
-              className={`menu-item ${role === "super_admin" ? "active" : ""}`}
-              onClick={() => {
-                setRole("super_admin");
-                setActiveTab("all_subscriptions");
-              }}
-            >
-              <ShieldCheck size={18} />
-              Cấp phép Admin
-            </button>
-          </div>
+          {session.user.role === "super_admin" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span className="role-badge-title" style={{ paddingLeft: "16px", marginBottom: "8px" }}>Hệ thống</span>
+              <button
+                className={`menu-item ${activeTab === "all_subscriptions" ? "active" : ""}`}
+                onClick={() => setActiveTab("all_subscriptions")}
+              >
+                <ShieldCheck size={18} />
+                Cấp phép Admin
+              </button>
+            </div>
+          )}
         </nav>
 
-        {/* Sidebar Footer Info */}
+        {/* Sidebar footer statistics */}
         <div className="sidebar-footer">
-          {role === "shop_admin" && (
+          {session.user.role === "shop_admin" && (
             <div className="role-badge">
               <span className="role-badge-title">Phòng máy hiện tại</span>
               <span className="role-badge-value" style={{ color: "var(--primary)" }}>
@@ -723,23 +1120,27 @@ function App() {
           )}
 
           <div className="role-badge">
-            <span className="role-badge-title">Chế độ phân quyền</span>
-            <span className="role-badge-value">
-              <Sliders size={14} />
-              {role === "super_admin" ? "Super Admin" : "Shop Admin"}
+            <span className="role-badge-title">Người dùng hiện tại</span>
+            <span className="role-badge-value" style={{ color: "var(--accent-purple)", fontSize: "12px" }}>
+              {session.user.fullName}
+            </span>
+            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+              {session.user.role === "super_admin" ? "Super Admin" : "Shop Admin"}
             </span>
           </div>
 
-          {/* Connection Status Indicator */}
-          <div className="conn-status">
-            <div className={`conn-dot ${isOnline ? "online" : "offline"}`}></div>
-            <span>
-              {checkingConn
-                ? "Đang kiểm tra..."
-                : isOnline
-                ? "Máy chủ: Trực tuyến"
-                : "Máy chủ: Ngoại tuyến (Demo)"}
-            </span>
+          {/* Connection Status indicator */}
+          <div className="conn-status" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div className={`conn-dot ${isOnline ? "online" : "offline"}`}></div>
+              <span style={{ fontSize: "11px" }}>
+                {checkingConn
+                  ? "Đang kết nối..."
+                  : isOnline
+                  ? "Máy chủ: Trực tuyến"
+                  : "Máy chủ: Ngoại tuyến"}
+              </span>
+            </div>
             <button
               onClick={checkConnection}
               style={{
@@ -756,13 +1157,18 @@ function App() {
               <RefreshCw size={12} className={checkingConn ? "pulse-glow" : ""} />
             </button>
           </div>
+
+          <button className="btn-secondary" onClick={() => void handleLogout()} style={{ width: "100%", justifyContent: "center", marginTop: "4px" }}>
+            <LogOut size={14} />
+            Đăng xuất
+          </button>
         </div>
       </aside>
 
-      {/* Main Area */}
+      {/* Main Content Pane */}
       <main className="content-area">
-        {/* Render Tab: Assets (Lock Screen slideshow management) */}
-        {role === "shop_admin" && activeTab === "assets" && (
+        {/* Render Tab: Lock Screen slideshow (Assets) */}
+        {session.user.role === "shop_admin" && activeTab === "assets" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
             <header className="content-header">
               <div>
@@ -786,7 +1192,7 @@ function App() {
               </div>
             </header>
 
-            {/* Custom drag/drop box display */}
+            {/* Drag & drop upload box */}
             <div
               className="upload-zone"
               onClick={() => fileInputRef.current?.click()}
@@ -797,7 +1203,7 @@ function App() {
                   const fakeEvent = {
                     target: { files: e.dataTransfer.files },
                   } as unknown as React.ChangeEvent<HTMLInputElement>;
-                  handleFileUpload(fakeEvent);
+                  void handleFileUpload(fakeEvent);
                 }
               }}
             >
@@ -812,7 +1218,7 @@ function App() {
               </div>
             </div>
 
-            {/* Image Gallery */}
+            {/* Gallery Grid */}
             <section style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "20px", fontWeight: 600 }}>Thư viện hình ảnh</h2>
               
@@ -834,13 +1240,12 @@ function App() {
                           alt={asset.fileName}
                           className="asset-preview"
                           onError={(e) => {
-                            // If load fail (e.g. invalid server path), show fallback
                             (e.target as HTMLElement).style.display = "none";
                           }}
                         />
                         <div className="asset-fallback">
                           <ImageIcon size={24} />
-                          <span>{asset.fileName}</span>
+                          <span style={{ fontSize: "11px", padding: "0 12px", textAlign: "center", wordBreak: "break-all" }}>{asset.fileName}</span>
                         </div>
                         <span className={`asset-badge ${asset.isActive ? "active" : "inactive"}`}>
                           {asset.isActive ? "Đang hoạt động" : "Tắt"}
@@ -853,7 +1258,7 @@ function App() {
                         </h3>
                         <div className="asset-meta">
                           <span>{(asset.fileSize / 1024 / 1024).toFixed(2)} MB</span>
-                          <span>{new Date(asset.createdAt).toLocaleDateString("vi-VN")}</span>
+                          <span>{formatDate(asset.createdAt)}</span>
                         </div>
 
                         <div className="asset-actions">
@@ -861,7 +1266,7 @@ function App() {
                             <input
                               type="checkbox"
                               checked={asset.isActive}
-                              onChange={() => handleToggleActive(asset.id, asset.isActive)}
+                              onChange={() => void handleToggleActive(asset.id, asset.isActive)}
                               className="switch-input"
                             />
                             <span className="switch-slider"></span>
@@ -870,7 +1275,7 @@ function App() {
 
                           <button
                             className="btn-icon"
-                            onClick={() => handleDeleteAsset(asset.id)}
+                            onClick={() => void handleDeleteAsset(asset.id)}
                             title="Xóa hình nền"
                           >
                             <Trash2 size={16} />
@@ -885,8 +1290,206 @@ function App() {
           </div>
         )}
 
+        {/* Render Tab: Quản lý chặn (Block Rules) */}
+        {session.user.role === "shop_admin" && activeTab === "block_rules" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+            <header className="content-header">
+              <div>
+                <h1 className="content-title">Danh sách Chặn máy trạm</h1>
+                <p className="content-subtitle">
+                  Chặn khách hàng truy cập các trang web có nội dung cấm, từ khóa độc hại hoặc tiến trình ứng dụng không mong muốn.
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button className="btn-glow" onClick={openCreate}>
+                  <Plus size={18} />
+                  Thêm luật chặn
+                </button>
+                <button className="btn-secondary" onClick={() => setModal({ kind: "batch" })}>
+                  <Upload size={18} />
+                  Thêm hàng loạt
+                </button>
+              </div>
+            </header>
+
+            {/* Rules stats strip */}
+            <div className="subs-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+              <div className="glass-panel subs-stat-card">
+                <span className="subs-stat-label">Tổng số luật</span>
+                <span className="subs-stat-value">{total}</span>
+              </div>
+              <div className="glass-panel subs-stat-card">
+                <span className="subs-stat-label">Đang kích hoạt</span>
+                <span className="subs-stat-value" style={{ color: "var(--success)" }}>{activeCount}</span>
+              </div>
+              <div className="glass-panel subs-stat-card">
+                <span className="subs-stat-label">Trang hiện tại</span>
+                <span className="subs-stat-value" style={{ color: "var(--primary)" }}>{page} / {totalPages}</span>
+              </div>
+            </div>
+
+            {/* Filter Toolbar */}
+            <section className="toolbar-filters">
+              <div className="search-box-container">
+                <Search size={18} style={{ color: "var(--text-muted)" }} />
+                <input
+                  className="search-box-input"
+                  value={q}
+                  onChange={(event) => setQ(event.target.value)}
+                  placeholder="Tìm kiếm luật hoặc nhãn..."
+                />
+              </div>
+
+              <select
+                className="select-filter"
+                value={typeFilter}
+                onChange={(event) => setTypeFilter(event.target.value as BlockRuleType | "")}
+              >
+                <option value="">Tất cả phân loại</option>
+                {TYPE_OPTIONS.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="select-filter"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as BlockRuleStatus | "")}
+              >
+                <option value="">Tất cả trạng thái</option>
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {status === "ACTIVE" ? "ĐANG BẬT" : "ĐANG TẮT"}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="select-filter"
+                value={sort}
+                onChange={(event) => setSort(event.target.value as BlockRuleSort)}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+
+              <button className="btn-secondary" onClick={() => void loadRules(page)} title="Làm mới">
+                <RefreshCw size={16} />
+              </button>
+            </section>
+
+            {/* Block Rules Table */}
+            <section className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Loại</th>
+                    <th>Giá trị chặn</th>
+                    <th>Nhãn ghi chú</th>
+                    <th>Trạng thái</th>
+                    <th>Độ ưu tiên</th>
+                    <th>Ngày tạo</th>
+                    <th style={{ textAlign: "right" }}>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((rule) => (
+                    <tr key={rule.id}>
+                      <td>
+                        <span className={`type-pill ${rule.type.toLowerCase()}`}>{rule.type}</span>
+                      </td>
+                      <td className="value-cell" title={rule.value}>
+                        {rule.value}
+                      </td>
+                      <td>{rule.label || "-"}</td>
+                      <td>
+                        <button
+                          className={`status-toggle ${rule.status.toLowerCase()}`}
+                          onClick={() => void toggleStatus(rule)}
+                          title="Bấm để đổi trạng thái"
+                        >
+                          {rule.status === "ACTIVE" ? <Check size={12} /> : <Ban size={12} />}
+                          {rule.status === "ACTIVE" ? "ĐANG BẬT" : "ĐANG KHÓA"}
+                        </button>
+                      </td>
+                      <td>{rule.priority}</td>
+                      <td>{formatDate(rule.createdAt)}</td>
+                      <td style={{ textAlign: "right" }}>
+                        <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                          <button
+                            className="btn-secondary"
+                            style={{ padding: "6px 10px" }}
+                            onClick={() => openEdit(rule)}
+                            title="Sửa"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          <button
+                            className="btn-icon"
+                            onClick={() => void removeRule(rule)}
+                            title="Xóa"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {!busy && items.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="empty-state" style={{ textAlign: "center", padding: "40px" }}>
+                        Không có luật chặn nào được hiển thị.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {busy && (
+                <div className="pulse-glow" style={{ padding: "20px", textAlign: "center", color: "var(--primary)" }}>
+                  Đang đồng bộ dữ liệu...
+                </div>
+              )}
+            </section>
+
+            {/* Pagination footer */}
+            <footer className="pager" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                Tổng cộng: <strong>{total}</strong> luật chặn được cấu hình.
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <button
+                  className="btn-secondary"
+                  disabled={page <= 1 || busy}
+                  onClick={() => void loadRules(page - 1)}
+                  style={{ padding: "6px 12px" }}
+                >
+                  <ChevronLeft size={16} />
+                  Trang trước
+                </button>
+                <span style={{ fontSize: "14px", fontWeight: 600 }}>
+                  Trang {page} / {totalPages}
+                </span>
+                <button
+                  className="btn-secondary"
+                  disabled={page >= totalPages || busy}
+                  onClick={() => void loadRules(page + 1)}
+                  style={{ padding: "6px 12px" }}
+                >
+                  Trang sau
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </footer>
+          </div>
+        )}
+
         {/* Render Tab: My Subscription Details (Tenant view) */}
-        {role === "shop_admin" && activeTab === "subscription" && (
+        {session.user.role === "shop_admin" && activeTab === "subscription" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
             <header className="content-header">
               <div>
@@ -899,7 +1502,6 @@ function App() {
 
             {mySubscription ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
-                {/* Check if subscription expiring soon or already expired */}
                 {mySubscription.status === "EXPIRED" ? (
                   <div className="subs-alert-banner" style={{ background: "var(--danger-glow)", borderColor: "var(--danger)", color: "var(--danger)" }}>
                     <XCircle size={20} className="pulse-glow" />
@@ -916,7 +1518,7 @@ function App() {
                     <div>
                       <h3 className="subs-alert-title">Bản quyền sắp hết hạn!</h3>
                       <p className="subs-alert-desc">
-                        Chỉ còn **{getRemainingDays(mySubscription.expiresAt)} ngày** nữa là gói dịch vụ của quán sẽ hết thời hạn. Vui lòng gia hạn để tránh gián đoạn dịch vụ của khách chơi máy trạm.
+                        Chỉ còn <strong>{getRemainingDays(mySubscription.expiresAt)} ngày</strong> nữa là gói dịch vụ của quán sẽ hết thời hạn. Vui lòng gia hạn để tránh gián đoạn dịch vụ của khách chơi máy trạm.
                       </p>
                     </div>
                   </div>
@@ -998,7 +1600,7 @@ function App() {
         )}
 
         {/* Render Tab: Super Admin Subscriptions Panel */}
-        {role === "super_admin" && (
+        {session.user.role === "super_admin" && activeTab === "all_subscriptions" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
             <header className="content-header">
               <div>
@@ -1078,6 +1680,13 @@ function App() {
                       </tr>
                     );
                   })}
+                  {allSubscriptions.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="empty-state" style={{ textAlign: "center" }}>
+                        Chưa có dữ liệu bản quyền đại lý nào.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </section>
@@ -1085,10 +1694,172 @@ function App() {
         )}
       </main>
 
-      {/* Modal: Create Subscription */}
+      {/* Modal: Rule CRUD Dialog (Create/Edit Block Rule) */}
+      {modal && modal.kind !== "batch" && (
+        <div className="modal-overlay" role="presentation">
+          <form className="modal-content animate-fade-in" onSubmit={(event) => void handleRuleSubmit(event)} style={{ maxWidth: "560px" }}>
+            <div className="modal-header">
+              <h3 className="modal-title">{modal.kind === "edit" ? "Cập nhật luật chặn" : "Thêm luật chặn mới"}</h3>
+              <button type="button" className="btn-icon" onClick={closeModal} title="Đóng">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <div className="form-group">
+                <label className="form-label">Loại quy tắc</label>
+                <select
+                  className="form-input"
+                  value={draft.type}
+                  onChange={(event) => setDraft({ ...draft, type: event.target.value as BlockRuleType })}
+                >
+                  {TYPE_OPTIONS.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Độ ưu tiên (0 - 9999)</label>
+                <input
+                  className="form-input"
+                  value={draft.priority}
+                  onChange={(event) => setDraft({ ...draft, priority: event.target.value })}
+                  inputMode="numeric"
+                  placeholder="0"
+                />
+              </div>
+
+              {modal.kind === "edit" && (
+                <div className="form-group" style={{ gridColumn: "span 2" }}>
+                  <label className="form-label">Trạng thái hoạt động</label>
+                  <select
+                    className="form-input"
+                    value={draft.status}
+                    onChange={(event) => setDraft({ ...draft, status: event.target.value as BlockRuleStatus })}
+                  >
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status === "ACTIVE" ? "Kích hoạt (ACTIVE)" : "Vô hiệu hóa (DISABLED)"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="form-group" style={{ gridColumn: "span 2" }}>
+                <label className="form-label">Giá trị chặn (URL, Tên tiến trình hoặc Từ khóa)</label>
+                <input
+                  className="form-input"
+                  value={draft.value}
+                  onChange={(event) => setDraft({ ...draft, value: event.target.value })}
+                  required
+                  maxLength={500}
+                  placeholder="Ví dụ: evil.com, game_cheat.exe, hack"
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: "span 2" }}>
+                <label className="form-label">Nhãn ghi chú (Tên phần mềm/trang web)</label>
+                <input
+                  className="form-input"
+                  value={draft.label}
+                  onChange={(event) => setDraft({ ...draft, label: event.target.value })}
+                  maxLength={200}
+                  placeholder="Ví dụ: Trang web cá độ, Tool hack..."
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: "span 2" }}>
+                <label className="form-label">Lý do chặn hiển thị khách</label>
+                <input
+                  className="form-input"
+                  value={draft.reason}
+                  onChange={(event) => setDraft({ ...draft, reason: event.target.value })}
+                  maxLength={500}
+                  placeholder="Lý do hiển thị trên màn hình máy trạm khi bị chặn"
+                />
+              </div>
+            </div>
+
+            {error && <div style={{ color: "var(--danger)", fontSize: "13px" }}>{error}</div>}
+
+            <div className="modal-footer">
+              <button type="button" className="btn-secondary" onClick={closeModal}>
+                Hủy bỏ
+              </button>
+              <button type="submit" className="btn-glow" disabled={busy}>
+                <Check size={16} />
+                Lưu quy tắc
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Batch Create block rules */}
+      {modal && modal.kind === "batch" && (
+        <div className="modal-overlay" role="presentation">
+          <form className="modal-content animate-fade-in" onSubmit={(event) => void handleBatchSubmit(event)} style={{ maxWidth: "560px" }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Thêm luật chặn hàng loạt</h3>
+              <button type="button" className="btn-icon" onClick={closeModal} title="Đóng">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <div className="form-group">
+                <label className="form-label">Loại quy tắc</label>
+                <select className="form-input" value={batchType} onChange={(event) => setBatchType(event.target.value as BlockRuleType)}>
+                  {TYPE_OPTIONS.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Độ ưu tiên (0 - 9999)</label>
+                <input className="form-input" value={batchPriority} onChange={(event) => setBatchPriority(event.target.value)} />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: "span 2" }}>
+                <label className="form-label">Các giá trị chặn (Mỗi dòng là một giá trị)</label>
+                <textarea
+                  className="form-input"
+                  value={batchText}
+                  onChange={(event) => setBatchText(event.target.value)}
+                  rows={8}
+                  style={{ resize: "vertical", fontFamily: "monospace", minHeight: "140px" }}
+                  required
+                  placeholder="evil-site-1.com&#10;evil-site-2.com&#10;porn-site-xyz.net"
+                />
+              </div>
+            </div>
+
+            {error && <div style={{ color: "var(--danger)", fontSize: "13px" }}>{error}</div>}
+
+            <div className="modal-footer">
+              <button type="button" className="btn-secondary" onClick={closeModal}>
+                Hủy bỏ
+              </button>
+              <button type="submit" className="btn-glow" disabled={busy}>
+                <Check size={16} />
+                Nhập hàng loạt
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Create Subscription (Super Admin) */}
       {showAddSubModal && (
         <div className="modal-overlay">
-          <div className="modal-content animate-fade-in">
+          <div className="modal-content animate-fade-in" style={{ maxWidth: "480px" }}>
             <div className="modal-header">
               <h3 className="modal-title">Cấp Bản quyền mới</h3>
               <button
@@ -1183,10 +1954,10 @@ function App() {
         </div>
       )}
 
-      {/* Modal: Edit/Extend Subscription */}
+      {/* Modal: Edit/Extend Subscription (Super Admin) */}
       {showEditSubModal && selectedSub && (
         <div className="modal-overlay">
-          <div className="modal-content animate-fade-in">
+          <div className="modal-content animate-fade-in" style={{ maxWidth: "480px" }}>
             <div className="modal-header">
               <h3 className="modal-title">Gia hạn &amp; Sửa Bản quyền</h3>
               <button
