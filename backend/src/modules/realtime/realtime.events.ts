@@ -3,14 +3,19 @@
  */
 export const REALTIME_ADMIN_WATCH_TENANT_EVENT = "admin:watch-tenant" as const;
 export const REALTIME_CLIENT_HEARTBEAT_EVENT = "client:heartbeat" as const;
+export const REALTIME_ADMIN_COMPUTER_CONTROL_EVENT =
+    "admin:computer-control" as const;
 export const REALTIME_COMPUTER_ONLINE_EVENT = "computer:online" as const;
 export const REALTIME_COMPUTER_OFFLINE_EVENT = "computer:offline" as const;
+export const REALTIME_COMPUTER_CONTROL_EVENT = "computer:control" as const;
 
 export const REALTIME_EVENT_NAMES = {
     ADMIN_WATCH_TENANT: REALTIME_ADMIN_WATCH_TENANT_EVENT,
     CLIENT_HEARTBEAT: REALTIME_CLIENT_HEARTBEAT_EVENT,
+    ADMIN_COMPUTER_CONTROL: REALTIME_ADMIN_COMPUTER_CONTROL_EVENT,
     COMPUTER_ONLINE: REALTIME_COMPUTER_ONLINE_EVENT,
     COMPUTER_OFFLINE: REALTIME_COMPUTER_OFFLINE_EVENT,
+    COMPUTER_CONTROL: REALTIME_COMPUTER_CONTROL_EVENT,
 } as const;
 
 // MVP tuning stays module-local constants (not env-backed).

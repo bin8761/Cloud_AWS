@@ -1,5 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../../src/shared/prisma/prisma.client", () => ({
+  prisma: {
+    computer: {
+      updateMany: vi.fn(),
+    },
+  },
+}));
 import {
+  parseAdminComputerControlPayload,
   parseAdminWatchTenantPayload,
   parseClientHeartbeatPayload,
 } from "../../src/modules/realtime/realtime.handlers";
@@ -43,5 +52,41 @@ describe("Realtime handler schema unit tests (Task 215-220)", () => {
       }),
     ).toThrow();
   });
-});
 
+  it("Task 255: admin:computer-control accepts unlock timed payload", () => {
+    const payload = parseAdminComputerControlPayload({
+      computerId: "computer-1",
+      action: "unlock",
+      mode: "timed",
+      durationMinutes: 120,
+    });
+
+    expect(payload).toEqual({
+      computerId: "computer-1",
+      action: "unlock",
+      mode: "timed",
+      durationMinutes: 120,
+    });
+  });
+
+  it("Task 256: admin:computer-control rejects lock with duration fields", () => {
+    expect(() =>
+      parseAdminComputerControlPayload({
+        computerId: "computer-1",
+        action: "lock",
+        mode: "timed",
+        durationMinutes: 10,
+      }),
+    ).toThrow();
+  });
+
+  it("Task 257: admin:computer-control rejects unlock timed without duration", () => {
+    expect(() =>
+      parseAdminComputerControlPayload({
+        computerId: "computer-1",
+        action: "unlock",
+        mode: "timed",
+      }),
+    ).toThrow();
+  });
+});

@@ -1,7 +1,7 @@
 ﻿{
     "$schema":  "https://json.schemastore.org/tsconfig",
     "compilerOptions":  {
-                            "rootDir":  "src",
+                            "rootDir":  ".",
                             "outDir":  "dist",
                             "target":  "ES2022",
                             "module":  "NodeNext",
@@ -18,5 +18,9 @@
     "include":  [
                     "src",
                     "tests"
+                ],
+    "exclude":  [
+                    "dist",
+                    "node_modules"
                 ]
 }

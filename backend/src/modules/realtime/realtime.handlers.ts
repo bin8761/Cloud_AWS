@@ -7,6 +7,7 @@ import type { Socket } from "socket.io";
 import { z } from "zod";
 import { buildRealtimeAckError, buildRealtimeAckInternalError, buildRealtimeAckSuccess } from "./realtime.ack";
 import {
+    REALTIME_ADMIN_COMPUTER_CONTROL_EVENT,
     REALTIME_ADMIN_WATCH_TENANT_EVENT,
     REALTIME_CLIENT_HEARTBEAT_EVENT,
 } from "./realtime.events";
@@ -22,6 +23,7 @@ import type {
     RealtimeAckResponse,
     RealtimeAdminSocketContext,
     RealtimeComputerSocketContext,
+    RealtimeGatewayPublicApi,
     RealtimeSocketContext,
 } from "./realtime.types";
 
@@ -29,7 +31,6 @@ type ForbiddenRoutingOverrides = {
     room?: never;
     roomName?: never;
     tenantId?: never;
-    computerId?: never;
 };
 
 export type AdminWatchTenantPayload = ForbiddenRoutingOverrides &
@@ -37,6 +38,16 @@ export type AdminWatchTenantPayload = ForbiddenRoutingOverrides &
 
 export type ClientHeartbeatPayload = ForbiddenRoutingOverrides & {
     sentAt: string;
+};
+
+export type AdminComputerControlPayload = Omit<
+    ForbiddenRoutingOverrides,
+    "computerId"
+> & {
+    computerId: string;
+    action: "unlock" | "lock";
+    mode?: "timed" | "free";
+    durationMinutes?: number;
 };
 
 export const adminWatchTenantPayloadSchema = z.object({}).strict();
@@ -47,6 +58,48 @@ export const clientHeartbeatPayloadSchema = z
     })
     .strict();
 
+export const adminComputerControlPayloadSchema = z
+    .object({
+        computerId: z.string().trim().min(1),
+        action: z.enum(["unlock", "lock"]),
+        mode: z.enum(["timed", "free"]).optional(),
+        durationMinutes: z.number().int().min(1).max(24 * 60).optional(),
+    })
+    .strict()
+    .superRefine((payload, ctx) => {
+        if (payload.action === "lock") {
+            if (payload.mode !== undefined || payload.durationMinutes !== undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Lock action must not include mode or durationMinutes.",
+                });
+            }
+            return;
+        }
+
+        if (payload.action === "unlock" && payload.mode === "timed") {
+            if (payload.durationMinutes === undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message:
+                        "Unlock timed action requires durationMinutes in range 1..1440.",
+                });
+            }
+            return;
+        }
+
+        if (
+            payload.action === "unlock" &&
+            payload.mode === "free" &&
+            payload.durationMinutes !== undefined
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Unlock free action must not include durationMinutes.",
+            });
+        }
+    });
+
 export const parseAdminWatchTenantPayload = (
     payload: unknown
 ): AdminWatchTenantPayload =>
@@ -56,6 +109,11 @@ export const parseClientHeartbeatPayload = (
     payload: unknown
 ): ClientHeartbeatPayload =>
     clientHeartbeatPayloadSchema.parse(payload) as ClientHeartbeatPayload;
+
+export const parseAdminComputerControlPayload = (
+    payload: unknown
+): AdminComputerControlPayload =>
+    adminComputerControlPayloadSchema.parse(payload) as AdminComputerControlPayload;
 
 type TrustedAdminRoomContext = Pick<RealtimeAdminSocketContext, "tenantId">;
 type TrustedComputerRoomContext = Pick<
@@ -169,6 +227,117 @@ export const registerAdminWatchTenantHandler = (
                 );
             } catch (error) {
                 respondAdminWatchTenant(ack, buildRealtimeAckInternalError(error));
+            }
+        }
+    );
+};
+
+type AdminComputerControlAckData = {
+    accepted: true;
+};
+
+type AdminComputerControlAck = (
+    response: RealtimeAckResponse<AdminComputerControlAckData>
+) => void;
+
+const respondAdminComputerControl = (
+    ack: AdminComputerControlAck | undefined,
+    response: RealtimeAckResponse<AdminComputerControlAckData>
+): void => {
+    if (!ack) {
+        return;
+    }
+
+    ack(response);
+};
+
+const isShopAdminContext = (
+    realtimeContext: RealtimeSocketContext | undefined
+): realtimeContext is RealtimeAdminSocketContext =>
+    realtimeContext?.clientType === "admin" &&
+    realtimeContext.role === "shop_admin";
+
+export const registerAdminComputerControlHandler = (
+    socket: Socket,
+    realtimeContext: RealtimeSocketContext | undefined,
+    realtimeGateway: RealtimeGatewayPublicApi,
+    findTenantComputerById: (input: {
+        tenantId: string;
+        computerId: string;
+    }) => Promise<{
+        id: string;
+        status: "ACTIVE" | "INACTIVE" | "BLOCKED";
+    } | null>
+): void => {
+    socket.on(
+        REALTIME_ADMIN_COMPUTER_CONTROL_EVENT,
+        async (payload: unknown, ack?: AdminComputerControlAck) => {
+            if (!isShopAdminContext(realtimeContext)) {
+                respondAdminComputerControl(
+                    ack,
+                    buildRealtimeAckError({
+                        code: "FORBIDDEN",
+                        message:
+                            "Only shop_admin realtime sockets can control computers.",
+                    })
+                );
+                return;
+            }
+
+            let parsedPayload: AdminComputerControlPayload;
+
+            try {
+                parsedPayload = parseAdminComputerControlPayload(payload);
+            } catch (error) {
+                if (error instanceof z.ZodError) {
+                    respondAdminComputerControl(
+                        ack,
+                        buildRealtimeAckError({
+                            code: "VALIDATION_ERROR",
+                            message: "Invalid admin:computer-control payload.",
+                        })
+                    );
+                    return;
+                }
+
+                respondAdminComputerControl(ack, buildRealtimeAckInternalError(error));
+                return;
+            }
+
+            try {
+                const targetComputer = await findTenantComputerById({
+                    tenantId: realtimeContext.tenantId,
+                    computerId: parsedPayload.computerId,
+                });
+
+                if (!targetComputer || targetComputer.status !== "ACTIVE") {
+                    respondAdminComputerControl(
+                        ack,
+                        buildRealtimeAckError({
+                            code: "FORBIDDEN",
+                            message:
+                                "Target computer is unavailable for control in current tenant.",
+                        })
+                    );
+                    return;
+                }
+
+                realtimeGateway.emitComputerControl({
+                    tenantId: realtimeContext.tenantId,
+                    computerId: targetComputer.id,
+                    action: parsedPayload.action,
+                    mode: parsedPayload.mode,
+                    durationMinutes: parsedPayload.durationMinutes,
+                });
+
+                respondAdminComputerControl(
+                    ack,
+                    buildRealtimeAckSuccess({
+                        accepted: true,
+                    })
+                );
+            } catch (error) {
+                respondAdminComputerControl(ack, buildRealtimeAckInternalError(error));
             }
         }
     );

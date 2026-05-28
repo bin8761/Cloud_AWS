@@ -1,5 +1,6 @@
 import type { Server as HttpServer } from "node:http";
 import { Server as SocketIoServer, type Socket } from "socket.io";
+import { prisma } from "../../shared/prisma/prisma.client";
 import { env } from "../../config/env";
 import {
     authenticateRealtimeAdminHandshake,
@@ -17,6 +18,7 @@ import {
     realtimeLoggingService,
 } from "./realtime.logging";
 import {
+    registerAdminComputerControlHandler,
     registerAdminWatchTenantHandler,
     registerClientHeartbeatHandler,
 } from "./realtime.handlers";
@@ -84,7 +86,7 @@ const registerRealtimeAuthenticationMiddleware = (
                     realtimeLoggingService.logAdminAuthFailure(
                         buildRealtimeAdminAuthFailureLogInput(
                             socket,
-                            "admin_handshake_rejected"
+                            "admin_auth_rejected"
                         )
                     );
                     next(new Error("Unauthorized realtime connection"));
@@ -110,7 +112,7 @@ const registerRealtimeAuthenticationMiddleware = (
                     realtimeLoggingService.logClientAuthFailure(
                         buildRealtimeClientAuthFailureLogInput(
                             socket,
-                            "client_handshake_rejected"
+                            "client_auth_rejected"
                         )
                     );
                     next(new Error("Unauthorized realtime connection"));
@@ -251,6 +253,22 @@ const registerRealtimeHandlers = (
         });
 
         registerAdminWatchTenantHandler(socket, realtimeContext);
+        registerAdminComputerControlHandler(
+            socket,
+            realtimeContext,
+            realtimeGateway,
+            async (input) =>
+                prisma.computer.findFirst({
+                    where: {
+                        id: input.computerId,
+                        tenantId: input.tenantId,
+                    },
+                    select: {
+                        id: true,
+                        status: true,
+                    },
+                })
+        );
         registerClientHeartbeatHandler(
             socket,
             realtimeContext,

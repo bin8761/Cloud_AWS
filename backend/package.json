@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "tsx watch src/server.ts",
-        "build": "tsc -p tsconfig.json",
+        "build": "tsc -p tsconfig.build.json",
         "test": "vitest run",
         "test:auth:live": "vitest run tests/auth/auth.api.live.test.ts",
         "test:auth:live:security": "vitest run tests/auth/auth.api.live.security.test.ts",

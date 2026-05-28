@@ -13,5 +13,13 @@ backend/dist/
 backend/coverage/
 backend/.nyc_output/
 
+# Module 2 demo app generated output
+module2-deliverables/**/bin/
+module2-deliverables/**/obj/
+module2-deliverables/**/bin-check/
+module2-deliverables/**/bin-verify/
+module2-deliverables/**/node_modules/
+module2-deliverables/**/dist/
+
 rule
 CONTINUITY.md

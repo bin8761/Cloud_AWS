@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const {
   verifyAccessTokenMock,
   findUniqueComputerMock,
+  findFirstComputerMock,
   updateManyComputerMock,
   hashDeviceTokenMock,
   loggerInfoMock,
@@ -15,6 +16,7 @@ const {
 } = vi.hoisted(() => ({
   verifyAccessTokenMock: vi.fn(),
   findUniqueComputerMock: vi.fn(),
+  findFirstComputerMock: vi.fn(),
   updateManyComputerMock: vi.fn(),
   hashDeviceTokenMock: vi.fn(),
   loggerInfoMock: vi.fn(),
@@ -44,6 +46,7 @@ vi.mock("../../src/shared/prisma/prisma.client", () => ({
   prisma: {
     computer: {
       findUnique: findUniqueComputerMock,
+      findFirst: findFirstComputerMock,
       updateMany: updateManyComputerMock,
     },
   },
@@ -58,8 +61,10 @@ vi.mock("../../src/shared/logging/logger", () => ({
 }));
 
 import {
+  REALTIME_ADMIN_COMPUTER_CONTROL_EVENT,
   REALTIME_ADMIN_WATCH_TENANT_EVENT,
   REALTIME_CLIENT_HEARTBEAT_EVENT,
+  REALTIME_COMPUTER_CONTROL_EVENT,
   REALTIME_COMPUTER_OFFLINE_EVENT,
   REALTIME_COMPUTER_ONLINE_EVENT,
 } from "../../src/modules/realtime/realtime.events";
@@ -167,6 +172,7 @@ describe.sequential("Realtime socket integration tests (Task 237-254)", () => {
     computerStore.clear();
     verifyAccessTokenMock.mockReset();
     findUniqueComputerMock.mockReset();
+    findFirstComputerMock.mockReset();
     updateManyComputerMock.mockReset();
     hashDeviceTokenMock.mockReset();
     loggerInfoMock.mockReset();
@@ -520,6 +526,121 @@ describe.sequential("Realtime socket integration tests (Task 237-254)", () => {
     expect(adminAck.error.code).toBe("VALIDATION_ERROR");
     expect(heartbeatAck.success).toBe(false);
     expect(heartbeatAck.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("Task 258: shop_admin can send unlock command to same-tenant computer only", async () => {
+    upsertComputer({
+      id: "computer-a1",
+      tenantId: "tenant-a",
+      status: "ACTIVE",
+      deviceTokenHash: "hash:token-a1",
+      lastSeenAt: null,
+    });
+
+    findFirstComputerMock.mockImplementation(
+      async (args: { where?: { id?: string; tenantId?: string } }) => {
+        const id = args?.where?.id;
+        const tenantId = args?.where?.tenantId;
+        if (!id || !tenantId) {
+          return null;
+        }
+        const computer = computerStore.get(id);
+        if (!computer || computer.tenantId !== tenantId) {
+          return null;
+        }
+        return {
+          id: computer.id,
+          status: computer.status,
+        };
+      },
+    );
+
+    const admin = await connectSocket(baseUrl, {
+      clientType: "admin",
+      accessToken: "admin-valid-tenant-a",
+    });
+    const computer = await connectSocket(baseUrl, {
+      clientType: "computer",
+      computerId: "computer-a1",
+      deviceToken: "token-a1",
+    });
+    sockets.push(admin, computer);
+
+    const controlEventPromise = waitForEvent<any>(computer, REALTIME_COMPUTER_CONTROL_EVENT);
+    const ack = await emitWithAck<any>(admin, REALTIME_ADMIN_COMPUTER_CONTROL_EVENT, {
+      computerId: "computer-a1",
+      action: "unlock",
+      mode: "timed",
+      durationMinutes: 60,
+    });
+
+    const controlEvent = await controlEventPromise;
+
+    expect(ack.success).toBe(true);
+    expect(controlEvent).toMatchObject({
+      tenantId: "tenant-a",
+      computerId: "computer-a1",
+      action: "unlock",
+      mode: "timed",
+      durationMinutes: 60,
+    });
+  });
+
+  it("Task 259: staff cannot send computer control command", async () => {
+    upsertComputer({
+      id: "computer-b1",
+      tenantId: "tenant-b",
+      status: "ACTIVE",
+      deviceTokenHash: "hash:token-b1",
+      lastSeenAt: null,
+    });
+
+    const staffAdmin = await connectSocket(baseUrl, {
+      clientType: "admin",
+      accessToken: "admin-valid-tenant-b",
+    });
+    sockets.push(staffAdmin);
+
+    const ack = await emitWithAck<any>(staffAdmin, REALTIME_ADMIN_COMPUTER_CONTROL_EVENT, {
+      computerId: "computer-b1",
+      action: "lock",
+    });
+
+    expect(ack.success).toBe(false);
+    expect(ack.error.code).toBe("FORBIDDEN");
+  });
+
+  it("Task 260: command cannot control cross-tenant computer", async () => {
+    upsertComputer({
+      id: "computer-b1",
+      tenantId: "tenant-b",
+      status: "ACTIVE",
+      deviceTokenHash: "hash:token-b1",
+      lastSeenAt: null,
+    });
+
+    const adminA = await connectSocket(baseUrl, {
+      clientType: "admin",
+      accessToken: "admin-valid-tenant-a",
+    });
+    const computerB = await connectSocket(baseUrl, {
+      clientType: "computer",
+      computerId: "computer-b1",
+      deviceToken: "token-b1",
+    });
+    sockets.push(adminA, computerB);
+
+    const ack = await emitWithAck<any>(adminA, REALTIME_ADMIN_COMPUTER_CONTROL_EVENT, {
+      computerId: "computer-b1",
+      action: "unlock",
+      mode: "free",
+    });
+
+    const didNotLeak = await waitForNoEvent(computerB, REALTIME_COMPUTER_CONTROL_EVENT);
+
+    expect(ack.success).toBe(false);
+    expect(ack.error.code).toBe("FORBIDDEN");
+    expect(didNotLeak).toBe(true);
   });
 
   it("Task 253: logs do not include raw handshake auth or token material", async () => {

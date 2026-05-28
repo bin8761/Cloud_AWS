@@ -4,6 +4,7 @@
  */
 import type { Server as SocketIoServer } from "socket.io";
 import {
+    REALTIME_COMPUTER_CONTROL_EVENT,
     REALTIME_COMPUTER_OFFLINE_EVENT,
     REALTIME_COMPUTER_ONLINE_EVENT,
 } from "./realtime.events";
@@ -53,12 +54,38 @@ type ComputerPresenceEventPayload = {
     lastSeenAt: string;
 };
 
+type ComputerControlEventPayload = {
+    tenantId: string;
+    computerId: string;
+    action: "unlock" | "lock";
+    mode?: "timed" | "free";
+    durationMinutes?: number;
+    sentAt: string;
+};
+
 const buildComputerPresenceEventPayload = (
     context: TrustedGatewayRoutingContext
 ): ComputerPresenceEventPayload => ({
     tenantId: context.tenantId,
     computerId: context.computerId,
     lastSeenAt: new Date().toISOString(),
+});
+
+const buildComputerControlEventPayload = (input: {
+    tenantId: string;
+    computerId: string;
+    action: "unlock" | "lock";
+    mode?: "timed" | "free";
+    durationMinutes?: number;
+}): ComputerControlEventPayload => ({
+    tenantId: input.tenantId,
+    computerId: input.computerId,
+    action: input.action,
+    ...(input.mode === undefined ? {} : { mode: input.mode }),
+    ...(input.durationMinutes === undefined
+        ? {}
+        : { durationMinutes: input.durationMinutes }),
+    sentAt: new Date().toISOString(),
 });
 
 /**
@@ -84,6 +111,18 @@ export const createRealtimeGateway = (
         io.to(resolveGatewayTenantRoom(trustedContext)).emit(
             REALTIME_COMPUTER_OFFLINE_EVENT,
             buildComputerPresenceEventPayload(trustedContext)
+        );
+    },
+    emitComputerControl: (input): void => {
+        const trustedContext = {
+            tenantId: input.tenantId,
+            computerId: input.computerId,
+        };
+        assertTrustedGatewayRoutingContext(trustedContext);
+
+        io.to(resolveGatewayComputerRoom(trustedContext)).emit(
+            REALTIME_COMPUTER_CONTROL_EVENT,
+            buildComputerControlEventPayload(input)
         );
     },
 });

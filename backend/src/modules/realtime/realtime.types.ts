@@ -47,6 +47,13 @@ export type RealtimeServerPublicApi = {
 export type RealtimeGatewayPublicApi = {
     emitComputerOnline: (tenantId: string, computerId: string) => void;
     emitComputerOffline: (tenantId: string, computerId: string) => void;
+    emitComputerControl: (input: {
+        tenantId: string;
+        computerId: string;
+        action: "unlock" | "lock";
+        mode?: "timed" | "free";
+        durationMinutes?: number;
+    }) => void;
 };
 
 export type RealtimeAckSuccess<TData> = {
