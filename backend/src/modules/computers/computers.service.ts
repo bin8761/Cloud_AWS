@@ -95,13 +95,6 @@ export class ComputersService {
   ) {}
 
   // Task 166-170 dependency scaffold: imported/wired for upcoming service methods.
-  private readonly dependencyScaffold = {
-    prismaClient: this.prismaClient,
-    registrationSecretStrategy: this.registrationSecretStrategy,
-    logService: this.logService,
-  };
-
-  // Task 166-170 dependency scaffold: imported/wired for upcoming service methods.
   private readonly mappers = {
     mapComputerToResponse,
     mapComputerListResponse,

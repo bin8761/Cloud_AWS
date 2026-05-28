@@ -59,6 +59,7 @@ vi.mock("../../src/shared/logging/logger", () => ({
 
 import {
   REALTIME_ADMIN_WATCH_TENANT_EVENT,
+  REALTIME_BLOCK_RULES_UPDATED_EVENT,
   REALTIME_CLIENT_HEARTBEAT_EVENT,
   REALTIME_COMPUTER_OFFLINE_EVENT,
   REALTIME_COMPUTER_ONLINE_EVENT,
@@ -484,6 +485,46 @@ describe.sequential("Realtime socket integration tests (Task 237-254)", () => {
     expect(offlineEvent).toMatchObject({
       tenantId: "tenant-a",
       computerId: "computer-a1",
+    });
+    expect(didNotLeak).toBe(true);
+  });
+
+  it("block-rules:updated is emitted only to the target tenant room", async () => {
+    const adminA = await connectSocket(baseUrl, {
+      clientType: "admin",
+      accessToken: "admin-valid-tenant-a",
+    });
+    const adminB = await connectSocket(baseUrl, {
+      clientType: "admin",
+      accessToken: "admin-valid-tenant-b",
+    });
+    sockets.push(adminA, adminB);
+
+    await emitWithAck(adminA, REALTIME_ADMIN_WATCH_TENANT_EVENT, {});
+    await emitWithAck(adminB, REALTIME_ADMIN_WATCH_TENANT_EVENT, {});
+
+    const updatedPromise = waitForEvent<{
+      action: string;
+      tenantId: string;
+      timestamp: string;
+    }>(adminA, REALTIME_BLOCK_RULES_UPDATED_EVENT);
+
+    realtimeServer.getGateway().emitBlockRulesUpdated("tenant-a", {
+      action: "created",
+      tenantId: "tenant-a",
+      timestamp: "2026-05-27T00:00:00.000Z",
+    });
+
+    const event = await updatedPromise;
+    const didNotLeak = await waitForNoEvent(
+      adminB,
+      REALTIME_BLOCK_RULES_UPDATED_EVENT,
+    );
+
+    expect(event).toEqual({
+      action: "created",
+      tenantId: "tenant-a",
+      timestamp: "2026-05-27T00:00:00.000Z",
     });
     expect(didNotLeak).toBe(true);
   });

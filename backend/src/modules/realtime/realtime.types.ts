@@ -47,6 +47,14 @@ export type RealtimeServerPublicApi = {
 export type RealtimeGatewayPublicApi = {
     emitComputerOnline: (tenantId: string, computerId: string) => void;
     emitComputerOffline: (tenantId: string, computerId: string) => void;
+    emitBlockRulesUpdated: (
+        tenantId: string,
+        payload: {
+            action: "created" | "updated" | "deleted" | "batch-created";
+            tenantId: string;
+            timestamp: string;
+        }
+    ) => void;
 };
 
 export type RealtimeAckSuccess<TData> = {
