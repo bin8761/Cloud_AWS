@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, FormEvent, useMemo } from "react";
+import { useState, useEffect, useRef, FormEvent, useMemo, useReducer } from "react";
 import {
   Ban,
   Check,
@@ -218,7 +218,7 @@ export function App() {
   const [loginPassword, setLoginPassword] = useState("");
   
   // Navigation active tab
-  const [activeTab, setActiveTab] = useState<"assets" | "subscription" | "all_subscriptions" | "block_rules">("assets");
+  const [activeTab, setActiveTab] = useState<"assets" | "subscription" | "all_subscriptions" | "block_rules" | "dashboard">("assets");
 
   // Connection & Offline simulated mode
   const [isOnline, setIsOnline] = useState<boolean>(false);
@@ -1050,6 +1050,13 @@ export function App() {
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <span className="role-badge-title" style={{ paddingLeft: "16px", marginBottom: "8px" }}>Menu chủ quán</span>
               <button
+                className={`menu-item ${activeTab === "dashboard" ? "active" : ""}`}
+                onClick={() => setActiveTab("dashboard")}
+              >
+                <Monitor size={18} />
+                Dashboard
+              </button>
+              <button
                 className={`menu-item ${activeTab === "assets" ? "active" : ""}`}
                 onClick={() => setActiveTab("assets")}
               >
@@ -1168,6 +1175,9 @@ export function App() {
       {/* Main Content Pane */}
       <main className="content-area">
         {/* Render Tab: Lock Screen slideshow (Assets) */}
+        {session.user.role === "shop_admin" && activeTab === "dashboard" && (
+          <DashboardTab apiBase={apiBase} accessToken={accessToken} />
+        )}
         {session.user.role === "shop_admin" && activeTab === "assets" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
             <header className="content-header">
@@ -2037,6 +2047,276 @@ export function App() {
             </form>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Dashboard Tab
+interface DailyDataEntry {
+  date: string;
+  totalAmount: number;
+  sessionCount: number;
+  totalMinutes: number;
+}
+
+interface DashboardData {
+  dailyData: DailyDataEntry[];
+  totalRevenue: number;
+  totalSessions: number;
+  totalMinutes: number;
+  days: number;
+}
+
+type DashboardState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: DashboardData }
+  | { status: "error"; message: string };
+
+type DashboardAction =
+  | { type: "FETCH_START" }
+  | { type: "FETCH_SUCCESS"; data: DashboardData }
+  | { type: "FETCH_ERROR"; message: string };
+
+function dashboardReducer(
+  _state: DashboardState,
+  action: DashboardAction,
+): DashboardState {
+  switch (action.type) {
+    case "FETCH_START":
+      return { status: "loading" };
+    case "FETCH_SUCCESS":
+      return { status: "success", data: action.data };
+    case "FETCH_ERROR":
+      return { status: "error", message: action.message };
+  }
+}
+
+function DashboardTab({
+  apiBase,
+  accessToken,
+}: {
+  apiBase: string;
+  accessToken: string;
+}) {
+  const [days, setDays] = useState(7);
+  const [state, dispatch] = useReducer(dashboardReducer, { status: "idle" });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchData = async () => {
+      dispatch({ type: "FETCH_START" });
+      try {
+        const r = await fetch(
+          `${apiBase}/api/usage/dashboard?days=${days}`,
+          { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
+        const res = await r.json() as { success: boolean; data: DashboardData };
+        if (cancelled) return;
+        if (res.success) {
+          dispatch({ type: "FETCH_SUCCESS", data: res.data });
+        } else {
+          dispatch({ type: "FETCH_ERROR", message: "Không thể tải dữ liệu dashboard." });
+        }
+      } catch {
+        if (!cancelled) {
+          dispatch({ type: "FETCH_ERROR", message: "Lỗi kết nối server." });
+        }
+      }
+    };
+
+    void fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [days, apiBase, accessToken]);
+
+  const barMax =
+    state.status === "success" && state.data.dailyData.length > 0
+      ? Math.max(...state.data.dailyData.map((d) => d.totalAmount), 1)
+      : 1;
+
+  return (
+    <div style={{ padding: "32px", maxWidth: "900px" }}>
+      <div style={{ marginBottom: "24px" }}>
+        <h2 style={{ fontSize: "22px", fontWeight: 700, margin: 0 }}>
+          📊 Dashboard Doanh Thu
+        </h2>
+        <p style={{ color: "var(--text-muted, #6b7280)", marginTop: "4px", fontSize: "14px" }}>
+          Thống kê doanh thu và phiên chơi của quán
+        </p>
+      </div>
+
+      <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
+        {[7, 14, 30].map((d) => (
+          <button
+            key={d}
+            onClick={() => setDays(d)}
+            style={{
+              padding: "6px 18px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: "13px",
+              background: days === d ? "var(--primary, #4f46e5)" : "var(--bg-secondary, #f3f4f6)",
+              color: days === d ? "#fff" : "var(--text, #374151)",
+            }}
+          >
+            {d} ngày
+          </button>
+        ))}
+      </div>
+
+      {state.status === "loading" && (
+        <div style={{ textAlign: "center", padding: "48px", color: "var(--text-muted, #9ca3af)" }}>
+          Đang tải...
+        </div>
+      )}
+
+      {state.status === "error" && (
+        <div style={{
+          padding: "12px 16px",
+          borderRadius: "8px",
+          background: "#fef2f2",
+          color: "#dc2626",
+          marginBottom: "24px",
+          fontSize: "14px",
+        }}>
+          {state.message}
+        </div>
+      )}
+
+      {state.status === "success" && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "32px" }}>
+            <div style={{
+              background: "var(--bg-card, #fff)",
+              borderRadius: "12px",
+              padding: "20px 24px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              borderLeft: "4px solid var(--primary, #4f46e5)",
+            }}>
+              <div style={{ fontSize: "12px", color: "var(--text-muted, #6b7280)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Tổng doanh thu
+              </div>
+              <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--primary, #4f46e5)" }}>
+                {state.data.totalRevenue.toLocaleString("vi-VN")} ₫
+              </div>
+            </div>
+
+            <div style={{
+              background: "var(--bg-card, #fff)",
+              borderRadius: "12px",
+              padding: "20px 24px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              borderLeft: "4px solid #0ea5e9",
+            }}>
+              <div style={{ fontSize: "12px", color: "var(--text-muted, #6b7280)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Tổng phiên chơi
+              </div>
+              <div style={{ fontSize: "24px", fontWeight: 700, color: "#0ea5e9" }}>
+                {state.data.totalSessions.toLocaleString("vi-VN")}
+              </div>
+            </div>
+
+            <div style={{
+              background: "var(--bg-card, #fff)",
+              borderRadius: "12px",
+              padding: "20px 24px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              borderLeft: "4px solid #10b981",
+            }}>
+              <div style={{ fontSize: "12px", color: "var(--text-muted, #6b7280)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Tổng thời gian
+              </div>
+              <div style={{ fontSize: "24px", fontWeight: 700, color: "#10b981" }}>
+                {Math.floor(state.data.totalMinutes / 60)}h {state.data.totalMinutes % 60}m
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            background: "var(--bg-card, #fff)",
+            borderRadius: "12px",
+            padding: "24px",
+            marginBottom: "24px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+          }}>
+            <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "20px", marginTop: 0 }}>
+              Doanh thu theo ngày (₫)
+            </h3>
+            {state.data.dailyData.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "32px", color: "var(--text-muted, #9ca3af)", fontSize: "14px" }}>
+                Chưa có dữ liệu trong khoảng thời gian này
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "180px" }}>
+                {state.data.dailyData.map((d) => (
+                  <div key={d.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", height: "100%" }}>
+                    <div style={{ fontSize: "10px", color: "var(--text-muted, #9ca3af)", fontWeight: 500 }}>
+                      {d.totalAmount > 0 ? `${(d.totalAmount / 1000).toFixed(0)}k` : ""}
+                    </div>
+                    <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
+                      <div
+                        style={{
+                          width: "100%",
+                          height: `${Math.max((d.totalAmount / barMax) * 100, d.totalAmount > 0 ? 4 : 0)}%`,
+                          background: "linear-gradient(180deg, var(--primary, #4f46e5), #818cf8)",
+                          borderRadius: "4px 4px 0 0",
+                          minHeight: d.totalAmount > 0 ? "4px" : "0",
+                          transition: "height 0.3s ease",
+                        }}
+                        title={`${d.date}: ${d.totalAmount.toLocaleString("vi-VN")} ₫`}
+                      />
+                    </div>
+                    <div style={{ fontSize: "10px", color: "var(--text-muted, #9ca3af)", textAlign: "center" }}>
+                      {d.date.slice(5)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{
+            background: "var(--bg-card, #fff)",
+            borderRadius: "12px",
+            padding: "24px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+          }}>
+            <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "16px", marginTop: 0 }}>
+              Chi tiết theo ngày
+            </h3>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid var(--border, #e5e7eb)" }}>
+                  <th style={{ textAlign: "left", padding: "8px 12px", color: "var(--text-muted, #6b7280)", fontWeight: 600 }}>Ngày</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", color: "var(--text-muted, #6b7280)", fontWeight: 600 }}>Doanh thu</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", color: "var(--text-muted, #6b7280)", fontWeight: 600 }}>Phiên chơi</th>
+                  <th style={{ textAlign: "right", padding: "8px 12px", color: "var(--text-muted, #6b7280)", fontWeight: 600 }}>Thời gian</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.data.dailyData.map((d, i) => (
+                  <tr key={d.date} style={{ borderBottom: "1px solid var(--border, #f3f4f6)", background: i % 2 === 0 ? "transparent" : "var(--bg-secondary, #fafafa)" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 500 }}>{d.date}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right", color: "var(--primary, #4f46e5)", fontWeight: 600 }}>
+                      {d.totalAmount.toLocaleString("vi-VN")} ₫
+                    </td>
+                    <td style={{ padding: "10px 12px", textAlign: "right" }}>{d.sessionCount}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right", color: "#10b981" }}>
+                      {Math.floor(d.totalMinutes / 60)}h {d.totalMinutes % 60}m
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
