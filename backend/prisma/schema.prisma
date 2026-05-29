@@ -32,6 +32,17 @@ enum ComputerStatus {
   BLOCKED
 }
 
+enum BlockRuleType {
+  URL
+  PROCESS
+  KEYWORD
+}
+
+enum BlockRuleStatus {
+  ACTIVE
+  DISABLED
+}
+
 enum VerificationTargetType {
   EMAIL
 }
@@ -50,11 +61,13 @@ model Tenant {
   createdAt                      DateTime     @default(now())
   updatedAt                      DateTime     @updatedAt
 
-  users     User[]
-  computers Computer[]
-
-  sessions           Session[]
-  usageLogs          UsageLog[]
+  users               User[]
+  computers           Computer[]
+  subscription        Subscription?
+  assets              LockScreenAsset[]
+  blockRules          BlockRule[]
+  sessions            Session[]
+  usageLogs           UsageLog[]
   dailyUsageSummaries DailyUsageSummary[]
 }
 
@@ -79,6 +92,27 @@ model Computer {
   @@unique([tenantId, macAddress])
   @@index([tenantId, createdAt])
   @@index([tenantId, status])
+}
+
+model BlockRule {
+  id        String          @id @default(uuid())
+  tenantId  String
+  type      BlockRuleType
+  value     String          @db.VarChar(500)
+  label     String?         @db.VarChar(200)
+  reason    String?         @db.VarChar(500)
+  status    BlockRuleStatus @default(ACTIVE)
+  priority  Int             @default(0)
+  createdBy String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, type, value])
+  @@index([tenantId, status])
+  @@index([tenantId, type, status])
+  @@index([tenantId, createdAt])
 }
 
 model User {
@@ -217,4 +251,41 @@ model DailyUsageSummary {
 enum SessionStatus {
   ACTIVE
   ENDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  PENDING
+}
+
+model Subscription {
+  id           String             @id @default(uuid())
+  tenantId     String             @unique
+  status       SubscriptionStatus @default(ACTIVE)
+  maxComputers Int                @default(20)
+  expiresAt    DateTime
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status, expiresAt])
+}
+
+model LockScreenAsset {
+  id        String   @id @default(uuid())
+  tenantId  String
+  fileName  String
+  filePath  String
+  fileSize  Int
+  mimeType  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, isActive])
 }

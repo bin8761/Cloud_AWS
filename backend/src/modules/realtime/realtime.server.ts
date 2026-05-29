@@ -84,7 +84,7 @@ const registerRealtimeAuthenticationMiddleware = (
                     realtimeLoggingService.logAdminAuthFailure(
                         buildRealtimeAdminAuthFailureLogInput(
                             socket,
-                            "admin_handshake_rejected"
+                            "admin_auth_rejected"
                         )
                     );
                     next(new Error("Unauthorized realtime connection"));
@@ -110,7 +110,7 @@ const registerRealtimeAuthenticationMiddleware = (
                     realtimeLoggingService.logClientAuthFailure(
                         buildRealtimeClientAuthFailureLogInput(
                             socket,
-                            "client_handshake_rejected"
+                            "client_auth_rejected"
                         )
                     );
                     next(new Error("Unauthorized realtime connection"));

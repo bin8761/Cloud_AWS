@@ -3,7 +3,7 @@ export type StaffUserDto = {
   tenantId: string;
   email: string;
   fullName: string;
-  role: "STAFF";
+  role: string;
   status: "ACTIVE" | "DISABLED";
   lastLoginAt: string | null;
   createdAt: string;
@@ -41,7 +41,7 @@ type StaffUserRecord = {
   tenantId: string | null;
   email: string;
   fullName: string;
-  role: "STAFF";
+  role: string;
   status: "ACTIVE" | "DISABLED";
   lastLoginAt: Date | string | null;
   createdAt: Date | string;
@@ -55,13 +55,16 @@ export const mapStaffUserDto = (user: StaffUserRecord): StaffUserDto => {
   if (!user.tenantId) {
     throw new Error("Staff user tenantId is required");
   }
+  if (user.role !== "STAFF") {
+    throw new Error("Staff user role is required");
+  }
 
   return {
     id: user.id,
     tenantId: user.tenantId,
     email: user.email,
     fullName: user.fullName,
-    role: user.role,
+    role: "STAFF",
     status: user.status,
     lastLoginAt: user.lastLoginAt ? toJsonSafeDate(user.lastLoginAt) : null,
     createdAt: toJsonSafeDate(user.createdAt),

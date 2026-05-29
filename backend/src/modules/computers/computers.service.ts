@@ -95,13 +95,6 @@ export class ComputersService {
   ) {}
 
   // Task 166-170 dependency scaffold: imported/wired for upcoming service methods.
-  private readonly dependencyScaffold = {
-    prismaClient: this.prismaClient,
-    registrationSecretStrategy: this.registrationSecretStrategy,
-    logService: this.logService,
-  };
-
-  // Task 166-170 dependency scaffold: imported/wired for upcoming service methods.
   private readonly mappers = {
     mapComputerToResponse,
     mapComputerListResponse,
@@ -121,6 +114,34 @@ export class ComputersService {
       tenant,
       requestContext,
     });
+
+    const sub = await this.prismaClient.subscription.findUnique({
+      where: { tenantId: tenant.id },
+    });
+
+    if (!sub) {
+      throw new AppError(402, "PAYMENT_REQUIRED", "No active subscription found for this tenant.");
+    }
+
+    if (sub.status !== "ACTIVE") {
+      throw new AppError(402, "PAYMENT_REQUIRED", `Tenant subscription status is ${sub.status}.`);
+    }
+
+    if (sub.expiresAt < new Date()) {
+      throw new AppError(402, "PAYMENT_REQUIRED", "Tenant subscription has expired.");
+    }
+
+    const currentCount = await this.prismaClient.computer.count({
+      where: { tenantId: tenant.id },
+    });
+
+    if (currentCount >= sub.maxComputers) {
+      throw new AppError(
+        403,
+        "FORBIDDEN",
+        "Maximum computer limit reached for this tenant's subscription.",
+      );
+    }
 
     const normalizedMacAddress = normalizeMacAddress(input.macAddress);
     await this.assertComputerMacAddressAvailable({

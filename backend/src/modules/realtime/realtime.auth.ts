@@ -67,39 +67,37 @@ export const authenticateRealtimeAdminHandshake = async (
     );
 
     if (!parsedHandshake.success) {
-        throwGenericConnectError();
+        return throwGenericConnectError();
     }
 
     const { accessToken } = parsedHandshake.data;
 
     if (accessToken.length === 0) {
-        throwGenericConnectError();
+        return throwGenericConnectError();
     }
 
-    let claims: Record<string, unknown>;
-
-    try {
-        claims = await authTokenService.verifyAccessToken(accessToken);
-    } catch {
-        // Includes malformed, expired, invalid, and refresh-token-type JWT.
-        throwGenericConnectError();
-    }
+    const claims = await authTokenService
+        .verifyAccessToken(accessToken)
+        .catch(() => {
+            // Includes malformed, expired, invalid, and refresh-token-type JWT.
+            return throwGenericConnectError();
+        });
 
     if (claims.tokenType !== "access") {
-        throwGenericConnectError();
+        return throwGenericConnectError();
     }
 
     if (!hasValidTenantContext(claims.tenantId)) {
-        throwGenericConnectError();
+        return throwGenericConnectError();
     }
 
     if (!hasValidUserId(claims.sub)) {
-        throwGenericConnectError();
+        return throwGenericConnectError();
     }
 
     if (!isAllowedRealtimeAdminRole(claims.role)) {
         // Includes explicit `super_admin` denial for Realtime MVP.
-        throwGenericConnectError();
+        return throwGenericConnectError();
     }
 
     return {
@@ -125,7 +123,7 @@ export const authenticateRealtimeComputerHandshake = async (
     );
 
     if (!parsedHandshake.success) {
-        throwGenericConnectError();
+        return throwGenericConnectError();
     }
 
     const { computerId, deviceToken } = parsedHandshake.data;
@@ -138,18 +136,11 @@ export const authenticateRealtimeComputerHandshake = async (
     });
 
     if (!computer) {
-        throwGenericConnectError();
+        return throwGenericConnectError();
     }
 
-    switch (computer.status) {
-        case ComputerStatus.INACTIVE:
-            throwGenericConnectError();
-        case ComputerStatus.BLOCKED:
-            throwGenericConnectError();
-        case ComputerStatus.ACTIVE:
-            break;
-        default:
-            throwGenericConnectError();
+    if (computer.status !== ComputerStatus.ACTIVE) {
+        return throwGenericConnectError();
     }
 
     const submittedDeviceTokenHash = hashDeviceToken(deviceToken);
