@@ -15,11 +15,17 @@ const listQueryMock = {
 const detailQueryMock = { data: null as Computer | null, isFetching: false };
 const updateMutationMock = { isPending: false, isSuccess: false, isError: false, error: null as unknown, mutate: vi.fn() };
 const reissueMutationMock = { mutateAsync: vi.fn() };
+const reissueRegistrationSecretMutationMock = { mutateAsync: vi.fn() };
+const registerComputerMutationMock = { mutateAsync: vi.fn() };
 const realtimeState = { connectionStatus: "connected", presenceByComputerId: {} };
 const listQueryCalls: Array<ComputersListQuery> = [];
 
 vi.mock("@/realtime/useAdminPresence", () => ({ useAdminPresence: () => useAdminPresenceMock() }));
 vi.mock("@/realtime/realtime.store", () => ({ useRealtimeStore: (selector: (state: typeof realtimeState) => unknown) => selector(realtimeState) }));
+vi.mock("@/auth/auth.store", () => ({
+  useAuthStore: (selector: (state: { tenant: { code: string } | null }) => unknown) =>
+    selector({ tenant: { code: "HELLO" } }),
+}));
 vi.mock("@/computers/computers.queries", () => ({
   useComputersListQuery: (query: ComputersListQuery) => {
     listQueryCalls.push(query);
@@ -28,6 +34,8 @@ vi.mock("@/computers/computers.queries", () => ({
   useComputerDetailQuery: () => detailQueryMock,
   useUpdateComputerMutation: () => updateMutationMock,
   useReissueComputerTokenMutation: () => reissueMutationMock,
+  useReissueComputerRegistrationSecretMutation: () => reissueRegistrationSecretMutationMock,
+  useRegisterComputerMutation: () => registerComputerMutationMock,
 }));
 
 describe("Computers page component flows", () => {
@@ -45,6 +53,15 @@ describe("Computers page component flows", () => {
     updateMutationMock.error = null;
     reissueMutationMock.mutateAsync.mockReset();
     reissueMutationMock.mutateAsync.mockResolvedValue({ computer: baseComputer(), deviceToken: "new-device-token-123" });
+    reissueRegistrationSecretMutationMock.mutateAsync.mockReset();
+    reissueRegistrationSecretMutationMock.mutateAsync.mockResolvedValue({
+      computerRegistrationSecret: "tenant-secret-123",
+    });
+    registerComputerMutationMock.mutateAsync.mockReset();
+    registerComputerMutationMock.mutateAsync.mockResolvedValue({
+      computer: baseComputer(),
+      deviceToken: "created-device-token-999",
+    });
   });
 
   it("handles list controls", async () => {
@@ -132,12 +149,11 @@ describe("Computers page component flows", () => {
   });
 
   it("disables confirm while token reissue is pending", async () => {
-    let resolvePending: (() => void) | null = null;
+    let resolvePending!: (value: { computer: Computer; deviceToken: string }) => void;
     reissueMutationMock.mutateAsync.mockImplementation(
       () =>
         new Promise((resolve) => {
-          resolvePending = () =>
-            resolve({ computer: baseComputer(), deviceToken: "pending-token" });
+          resolvePending = resolve;
         }),
     );
 
@@ -149,10 +165,55 @@ describe("Computers page component flows", () => {
 
     const confirmButton = screen.getByRole("button", { name: "Reissuing..." });
     expect(confirmButton.getAttribute("disabled")).not.toBeNull();
-    resolvePending?.();
+    resolvePending({ computer: baseComputer(), deviceToken: "pending-token" });
     await waitFor(() => {
       expect(screen.getByText("New one-time token")).toBeTruthy();
     });
+  });
+
+  it("reissues registration secret from computers header", async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: writeTextMock }, configurable: true });
+
+    render(<ComputersPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Reissue registration secret" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm reissue" }));
+    expect(await screen.findByText("Reason is required before reissuing registration secret.")).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText("Example: Previous secret was lost"), { target: { value: "Lost old secret" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm reissue" }));
+    expect(await screen.findByText("New one-time registration secret")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Copy registration secret" }));
+    await waitFor(() => expect(writeTextMock).toHaveBeenCalledWith("tenant-secret-123"));
+  });
+
+  it("creates computer from header modal", async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: writeTextMock }, configurable: true });
+
+    render(<ComputersPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Create computer" }));
+    fireEvent.change(screen.getByPlaceholderText("Enter tenant registration secret"), { target: { value: "secret-1" } });
+    fireEvent.change(screen.getByPlaceholderText("AA:BB:CC:DD:EE:FF"), { target: { value: "AA:BB:CC:DD:EE:11" } });
+    fireEvent.change(screen.getByPlaceholderText("Front desk POS"), { target: { value: "Desk 01" } });
+    const createButtons = screen.getAllByRole("button", { name: "Create computer" });
+    fireEvent.click(createButtons[createButtons.length - 1] as HTMLElement);
+
+    await waitFor(() =>
+      expect(registerComputerMutationMock.mutateAsync).toHaveBeenCalledWith({
+        tenantCode: "HELLO",
+        registrationSecret: "secret-1",
+        macAddress: "AA:BB:CC:DD:EE:11",
+        name: "Desk 01",
+      }),
+    );
+    expect(
+      await screen.findByText("Computer created successfully. Copy the one-time device token before closing."),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Created" }).getAttribute("disabled")).not.toBeNull();
+    expect(await screen.findByText("One-time device token")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Copy device token" }));
+    await waitFor(() => expect(writeTextMock).toHaveBeenCalledWith("created-device-token-999"));
   });
 
   it("renders forbidden list UI for 403", () => {

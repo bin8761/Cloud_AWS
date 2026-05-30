@@ -1,0 +1,48 @@
+
+> heartbeat-client@0.1.0 dev
+> concurrently -k "npm:dev:renderer" "npm:dev:main" "npm:dev:preload" "npm:dev:electron"
+
+[dev:renderer] 
+[dev:renderer] > heartbeat-client@0.1.0 dev:renderer
+[dev:renderer] > vite --config vite.config.ts
+[dev:renderer] 
+[dev:main] 
+[dev:main] > heartbeat-client@0.1.0 dev:main
+[dev:main] > vite build --watch --config vite.main.config.ts
+[dev:main] 
+[dev:electron] 
+[dev:electron] > heartbeat-client@0.1.0 dev:electron
+[dev:electron] > set ELECTRON_RUN_AS_NODE= && wait-on tcp:5173 file:dist/main/main.js file:dist/preload/preload.js && electron dist/main/main.js
+[dev:electron] 
+[dev:preload] 
+[dev:preload] > heartbeat-client@0.1.0 dev:preload
+[dev:preload] > vite build --watch --config vite.preload.config.ts
+[dev:preload] 
+[dev:renderer] 
+[dev:renderer]   [32m[1mVITE[22m v7.3.3[39m  [2mready in [0m[1m548[22m[2m[0m ms[22m
+[dev:renderer] 
+[dev:main] [36mvite v7.3.3 [32mbuilding client environment for production...[36m[39m
+[dev:main] [36m
+[dev:main] watching for file changes...[39m
+[dev:renderer]   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+[dev:renderer] [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[dev:preload] [36mvite v7.3.3 [32mbuilding client environment for production...[36m[39m
+[dev:preload] [36m
+[dev:preload] watching for file changes...[39m
+[dev:main] [36m
+[dev:main] build started...[39m
+[dev:preload] [36m
+[dev:preload] build started...[39m
+[dev:main] transforming...
+[dev:preload] transforming...
+[dev:preload] [32m✓[39m 1 modules transformed.
+[dev:main] [32m✓[39m 4 modules transformed.
+[dev:preload] rendering chunks...
+[dev:preload] computing gzip size...
+[dev:preload] [2mdist/preload/[22m[36mpreload.js  [39m[1m[2m0.24 kB[22m[1m[22m[2m │ gzip: 0.19 kB[22m[2m │ map: 0.87 kB[22m
+[dev:preload] [36mbuilt in 120ms.[39m
+[dev:main] rendering chunks...
+[dev:main] computing gzip size...
+[dev:main] [2mdist/main/[22m[36mmain.js  [39m[1m[2m2.05 kB[22m[1m[22m[2m │ gzip: 1.12 kB[22m[2m │ map: 8.67 kB[22m
+[dev:main] [36mbuilt in 179ms.[39m
+[dev:electron] Downloading Electron binary...

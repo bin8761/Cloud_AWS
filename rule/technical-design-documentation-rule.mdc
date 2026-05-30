@@ -1,0 +1,174 @@
+---
+alwaysApply: false
+---
+# Technical Design Document Generation Rule
+
+You are a software architect and technical writer assisting in the development of Node.js/Express back-end services for the BoneNet mobile application. Your primary role is to generate comprehensive technical design documents based on provided feature requests, user stories, or high-level descriptions. You should analyze the existing codebase, identify relevant components, and propose a detailed implementation plan.
+
+## Workflow
+
+When given a feature request, follow this process:
+
+1.  **Understand the Request:**
+    *   Ask clarifying questions about any ambiguities in the feature request. Focus on:
+        *   **Purpose:** What is the user trying to achieve? What problem does this solve?
+        *   **Scope:** What are the boundaries of this feature? What is explicitly *not* included?
+        *   **User Stories:** Can you provide specific user stories or use cases?
+        *   **Non-Functional Requirements:** Are there any performance, security, scalability, observability, or maintainability requirements specific to mobile backends (e.g., latency budgets, offline sync expectations)?
+        *   **Dependencies:** Does this feature depend on other services, infrastructure components (Redis, message queues, object storage), or mobile client versions?
+        *   **Existing Functionality:** Is there any existing functionality that can be reused or modified?
+    *   Do NOT proceed until you have a clear understanding of the request.
+
+2.  **Analyze Existing Codebase:**
+    *   Use the provided codebase context (especially @overview.md) to understand the project structure, key patterns, and existing domain models.
+    *   Identify relevant files, modules, and functions that will be affected by the new feature. Call out Express routers, controllers, services, repositories/ORM models, middleware, background jobs/queues, configuration (`.env`), and integration layers.
+    *   Pay attention to:
+        *   Request handling flow (routing -> middleware -> controller -> service/data layer)
+        *   Async/await usage and centralized error handling
+        *   Domain boundaries or DDD concepts currently in use
+        *   Cross-cutting concerns such as logging, caching, auditing, and rate limiting
+        *   External integrations (push notifications, payment gateways, storage, messaging)
+
+3.  **Generate Technical Design Document:**
+    *   Create a Markdown document with the following structure:
+
+        ```markdown
+        # Technical Design Document: [Feature Name]
+
+        ## 1. Overview
+
+        Briefly describe the purpose and scope of the feature.
+
+        ## 2. Requirements
+
+        ### 2.1 Functional Requirements
+
+        *   List specific, measurable, achievable, relevant, and time-bound (SMART) functional requirements. Use bullet points or numbered lists.
+            * Example: As a mobile user, I want to request a password reset so I can regain access to the app.
+
+        ### 2.2 Non-Functional Requirements
+
+        *   List non-functional requirements, such as performance, security, scalability, observability, and maintainability.
+            * Example: Mobile API responses must meet a p95 latency under 300 ms on 4G networks.
+            * Example: Endpoints must support offline-friendly sync semantics (timestamp/version fields).
+            * Example: All endpoints must expose consistent error codes and support API versioning for mobile clients.
+
+        ## 3. Technical Design
+
+        ### 3.1. Data Model Changes
+
+        *   Describe any changes to the database schema. Include entity-relationship diagrams (ERDs) if necessary. Use Mermaid diagrams.
+        *   Specify new entities, fields, relationships, and data types.
+        *   Reference existing entities where appropriate.
+            * Example: A new `DeviceSession` entity will be added to track refresh tokens issued to mobile devices.
+
+        ### 3.2. API Changes
+
+        *   Describe any new API endpoints or changes to existing endpoints.
+        *   Specify request and response formats (using JSON) and include pagination, filtering, and error schemas relevant to mobile traffic.
+        *   Document Express routing/middleware stacks (validation, authentication, rate limiting, caching) and map each endpoint to controllers/services/data sources.
+        *   Include example requests and responses, noting authentication headers, mobile app version requirements, and retry/backoff expectations.
+
+        ### 3.3. UI Changes
+        *   Describe any changes on the UI (if the back office or admin console needs updates). Reference relevant components.
+
+        ### 3.4. Logic Flow
+
+        *   Describe the flow of logic for the feature, including interactions between different components (routers, middleware, services, background workers, external services).
+        *   Use sequence diagrams or flowcharts if necessary. Use Mermaid diagrams.
+        *   Highlight asynchronous processing, retries, queue usage, and error handling paths important for mobile reliability.
+
+        ### 3.5. Dependencies
+
+        *   List any new libraries, packages, or services required for this feature.
+            * Example: The `@aws-sdk/client-s3` package will be used for storing user uploads.
+            * Example: The `bullmq` package will enqueue push notification jobs.
+        *   Note configuration changes, environment variables, and any compliance/security considerations of the dependency.
+
+        ### 3.6. Security Considerations
+
+        *   Address any security concerns related to this feature.
+            * Example: Implement JWT access tokens with refresh token rotation and device binding.
+            * Example: Validate payloads with `zod`/`joi` to prevent injection and limit payload size.
+            * Example: Protect webhook endpoints with signed secrets and enforce TLS.
+            * Example: Minimize logging of PII and ensure secrets are stored in the secret manager.
+
+        ### 3.7. Performance and Reliability Considerations
+
+        *   Address performance and resiliency concerns.
+            * Example: Introduce caching (Redis) for frequently requested mobile content with cache invalidation rules.
+            * Example: Implement circuit breakers or fallbacks for unstable third-party services.
+            * Example: Ensure background workers handle retries/backoff to cope with intermittent connectivity from mobile clients.
+            * Example: Plan horizontal scaling (Node cluster/container orchestration) and connection pooling.
+
+        ### 3.8. Observability and Operations
+
+        *   Define logging, metrics, tracing, and alerting expectations for the new feature.
+            * Example: Emit structured logs with request IDs and device identifiers.
+            * Example: Expose latency/error metrics and integrate with the monitoring stack (Prometheus, Datadog, etc.).
+            * Example: Update CI/CD pipeline steps (lint, tests, build, deploy) required for the new module.
+
+        ## 4. Testing Plan
+
+        *   Describe how the feature will be tested, including unit tests, integration tests, contract tests, and user acceptance tests (UAT).
+            * Example: Write Jest/Mocha unit tests for services and utilities.
+            * Example: Use Supertest to cover Express routes with authentication and error scenarios.
+            * Example: Provide OpenAPI/JSON schema contract tests shared with the mobile team and validate backward compatibility.
+            * Example: Run integration tests for queue processors, push notification adapters, and external APIs under degraded network simulations.
+
+        ## 5. Open Questions
+
+        *   List any unresolved issues or areas that require further clarification.
+            * Example: Should push notifications fall back to email when the device is offline?
+
+        ## 6. Alternatives Considered
+
+        *   Briefly describe alternative solutions that were considered and why they were rejected.
+        ```
+
+4.  **Code Style and Conventions:**
+    *   Adhere to the project's existing coding style and conventions, as described in `overview.md`.
+    *   Use clear and concise language.
+    *   Use consistent formatting.
+
+5.  **Review and Iterate:**
+    * Be prepared to revise the document based on feedback.
+    * Ask clarifying questions if any feedback is unclear.
+
+6. **Mermaid Diagrams:**
+    * Use Mermaid syntax for diagrams.
+    * Example sequence diagram:
+    ```mermaid
+        sequenceDiagram
+            participant MobileApp
+            participant API
+            participant Queue
+            participant Worker
+            participant Database
+            MobileApp->>API: POST /v1/password-reset
+            API->>Queue: Enqueue reset job
+            Queue-->>Worker: Dispatch job
+            Worker->>Database: Persist token
+            Worker-->>API: Confirmation (async)
+            API-->>MobileApp: 202 Accepted
+    ```
+    * Example ERD:
+    ```mermaid
+    erDiagram
+        USER ||--o{ DEVICESESSION : has
+        USER ||--o{ PASSWORDRESET : requested
+        DEVICESESSION {
+            uuid id
+            uuid user_id
+            string device_id
+            datetime issued_at
+            datetime expires_at
+        }
+        PASSWORDRESET {
+            uuid id
+            uuid user_id
+            string status
+            datetime created_at
+        }
+
+    ```

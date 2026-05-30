@@ -45,6 +45,11 @@ export function Drawer({
   const descriptionId = useId();
   const dialogRef = useRef<HTMLElement | null>(null);
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -78,7 +83,7 @@ export function Drawer({
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape" && closeOnEscape) {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -125,7 +130,7 @@ export function Drawer({
         lastActiveElementRef.current.focus();
       }
     };
-  }, [closeOnEscape, isOpen, onClose]);
+  }, [closeOnEscape, isOpen]);
 
   if (!isOpen) {
     return null;

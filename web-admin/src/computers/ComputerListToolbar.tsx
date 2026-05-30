@@ -40,15 +40,15 @@ export function ComputerListToolbar({
       className="rounded-[var(--radius-md)] border border-[var(--app-border)] bg-[var(--app-surface)] p-4 md:p-5"
       aria-label="Computer list toolbar"
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
-        <div className="space-y-1 lg:max-w-[280px] xl:max-w-none">
+      <div className="flex flex-col gap-3">
+        <div className="space-y-1">
           <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--app-muted)]">Inventory controls</h2>
           <p className="text-sm text-[var(--app-fg)]">Search, filter, sorting, and paging controls appear in this toolbar.</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex-1 lg:gap-2 xl:grid-cols-4 xl:gap-3">
-          <label className="space-y-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
-            Search
+        <div className="space-y-3">
+          <label className="block w-full space-y-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
+            <span className="block">Search</span>
             <TextInput
               value={searchValue}
               onChange={(event) => onSearchChange(event.target.value)}
@@ -57,8 +57,8 @@ export function ComputerListToolbar({
             />
           </label>
 
-          <label className="space-y-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
-            Status
+          <label className="block w-full space-y-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
+            <span className="block">Status</span>
             <Select
               value={statusValue}
               onChange={(event) => onStatusChange(event.target.value)}
@@ -71,8 +71,8 @@ export function ComputerListToolbar({
             </Select>
           </label>
 
-          <label className="space-y-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
-            Sort
+          <label className="block w-full space-y-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
+            <span className="block">Sort</span>
             <Select
               value={sortValue}
               onChange={(event) => onSortChange(event.target.value)}
@@ -85,8 +85,8 @@ export function ComputerListToolbar({
             </Select>
           </label>
 
-          <label className="space-y-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
-            Page size
+          <label className="block w-full space-y-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
+            <span className="block">Page size</span>
             <Select
               value={String(pageSizeValue)}
               onChange={(event) => onPageSizeChange(Number(event.target.value))}

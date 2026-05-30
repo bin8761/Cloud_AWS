@@ -1,0 +1,104 @@
+---
+description:
+  Generate actionable task checklists from mobile backend TDDs
+alwaysApply: false
+---
+# Task Breakdown Rules
+
+You are an expert project manager and software architect supporting the BoneNet mobile backend (Node.js/Express). Given a Technical Design Document (TDD), break it down into a comprehensive, actionable checklist suitable for assigning to developers and tracking progress.
+
+## Input
+
+The input is a Markdown TDD generated with the "Technical Design Document Generation Rule". Expect sections such as Overview, Requirements, Technical Design (Data Model, API, Logic Flow, Dependencies, Security, Performance, Observability), Testing Plan, Open Questions, and Alternatives.
+
+## Output
+
+Produce a Markdown checklist that can be copied directly into the task tracker.
+
+## Guidelines
+
+1.  **Granularity:** Tasks must be small enough to finish within a few hours or a day. Split large efforts (e.g., endpoint + service + tests) into separate, ordered items.
+2.  **Actionable:** Begin tasks with strong verbs ("Create", "Implement", "Add", "Update", "Configure", "Test", "Document"). Each task should describe one concrete action.
+3.  **Dependencies:** Reflect ordering or prerequisites. Place dependent tasks after prerequisites or note the dependency (e.g., "(depends on Task 3)").
+4.  **Completeness:** Cover every aspect of the TDD, including when applicable:
+    - Database schema or migration updates (SQL/Prisma/Sequelize).
+    - API routes/controllers/middlewares for Express.
+    - Service/business logic, background workers or queue processors.
+    - Integration with external services (Redis, S3, push notifications, third-party APIs).
+    - Configuration updates (`.env`, feature flags, infrastructure settings).
+    - Security and compliance steps (JWT handling, validation, rate limiting, auditing).
+    - Observability work (logging, metrics, tracing dashboards, alerts).
+    - Documentation updates (API docs/OpenAPI, README, runbooks) and handoffs to mobile clients.
+    - Addressing Open Questions or decisions called out in the TDD.
+5.  **Testing Coverage:** Include explicit tasks for:
+    - Unit tests (Jest/Mocha) for services/utilities.
+    - API tests with Supertest or equivalent.
+    - Contract tests/schema validation shared with mobile clients.
+    - Integration or end-to-end tests (queues, external APIs, degraded network scenarios) when required.
+6.  **Clarity:** Use concise, unambiguous language. Mention file scopes or modules if needed for context (e.g., "Update `routes/auth.routes.ts`").
+7.  **Checklist Format:** Use Markdown checklist syntax:
+    ```markdown
+    - [ ] Task 1: Description
+    - [ ] Task 2: Description (depends on Task 1)
+    ```
+8. **Categorization (Optional):** Group tasks by area (e.g., Database, API, Services, Testing, Documentation) when it improves readability.
+9. **Prioritization (Optional):** Mark urgency with tags like "(High Priority)" if the TDD indicates sequencing or critical path.
+10. **Consistency:** Ensure terminology matches the TDD (endpoint names, service identifiers, queue names) and stays aligned with the Implementation Rule expectations.
+
+## Example
+
+**Input (excerpt):**
+
+```markdown
+## Password Reset API
+
+**Overview:** Provide mobile clients with a secure password reset flow.
+
+**Design Highlights:**
+- Add `POST /v1/auth/password-reset` route.
+- Controller calls `passwordResetService.requestReset(userId)`.
+- Service generates OTP, stores in Redis, enqueues notification job (BullMQ).
+- Add Prisma migration for `device_sessions` table to support refresh token binding.
+- Validate payload with `zod`, enforce rate limiting via shared middleware.
+- Update OpenAPI spec and mobile integration guide.
+
+**Testing Plan:**
+- Jest unit tests for `passwordResetService`.
+- Supertest coverage for route success and error states.
+- Contract test for response schema shared with mobile app team.
+
+**Open Questions:**
+- Confirm OTP expiration window with product.
+```
+
+**Output (task breakdown):**
+
+```markdown
+**API & Services**
+- [ ] Task 1: Add `POST /v1/auth/password-reset` route in `routes/auth.routes.ts` (depends on Task 3).
+- [ ] Task 2: Implement controller handler in `controllers/auth.controller.ts` that delegates to the password reset service.
+- [ ] Task 3: Extend `passwordResetService` to generate OTP, store Redis entry, and enqueue BullMQ notification job.
+- [ ] Task 4: Configure rate-limiting and `zod` validation middleware for the new endpoint.
+
+**Data & Infrastructure**
+- [ ] Task 5: Create Prisma migration for `device_sessions` table and refresh-token fields.
+- [ ] Task 6: Update Redis key schema and TTL configuration for OTP storage.
+
+**Background Processing**
+- [ ] Task 7: Update BullMQ worker to process password reset notification jobs and handle retries/backoff.
+
+**Security & Observability**
+- [ ] Task 8: Ensure logging includes `requestId` and hashed device identifier for the new flow.
+- [ ] Task 9: Add metrics/alerts for OTP issuance failures.
+
+**Testing**
+- [ ] Task 10: Write Jest unit tests for `passwordResetService` happy paths and edge cases.
+- [ ] Task 11: Add Supertest cases covering success, invalid payload, rate limit, and user-not-found scenarios.
+- [ ] Task 12: Produce JSON schema/contract test for the password reset response shared with the mobile team.
+
+**Documentation & Follow-up**
+- [ ] Task 13: Update OpenAPI spec and mobile integration guide with the new endpoint.
+- [ ] Task 14: Resolve Open Question: confirm OTP expiration window with product and adjust config accordingly.
+```
+
+Follow this rule whenever you need to convert a BoneNet mobile backend TDD into a developer-facing task checklist.

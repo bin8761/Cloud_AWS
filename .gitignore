@@ -8,6 +8,9 @@ backend/node_modules/
 
 web-admin/node_modules/
 
+desktop-client/heartbeat-client/node_modules/
+desktop-client/heartbeat-client/src/renderer/node_modules/
+
 web-admin/.env
 
 # Build output
@@ -17,5 +20,5 @@ backend/dist/
 backend/coverage/
 backend/.nyc_output/
 
-rule
+# rule
 CONTINUITY.md

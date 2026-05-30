@@ -13,6 +13,10 @@ import type {
   Computer,
   ComputersListQuery,
   ComputersListResponse,
+  RegisterComputerInput,
+  RegisterComputerResult,
+  ReissueRegistrationSecretInput,
+  ReissueRegistrationSecretResult,
   ReissueTokenInput,
   ReissueTokenResult,
   UpdateComputerInput,
@@ -20,6 +24,7 @@ import type {
 
 const COMPUTERS_API_PATHS = {
   list: "/api/computers",
+  register: "/api/computers/register",
 } as const;
 
 function buildComputerDetailPath(id: string): string {
@@ -28,6 +33,10 @@ function buildComputerDetailPath(id: string): string {
 
 function buildReissueComputerTokenPath(id: string): string {
   return `/api/computers/${encodeURIComponent(id)}/reissue-token`;
+}
+
+function buildReissueComputerRegistrationSecretPath(): string {
+  return "/api/tenants/me/computer-registration-secret/reissue";
 }
 
 function throwNormalizedApiError(payload: unknown, status: number): never {
@@ -69,6 +78,27 @@ export async function listComputers(
   }
 
   const data = parseFoundationSuccessEnvelope<ComputersListResponse>(payload);
+  if (!data) {
+    throwInvalidSuccessEnvelope(response.status);
+  }
+
+  return data;
+}
+
+export async function registerComputer(input: RegisterComputerInput): Promise<RegisterComputerResult> {
+  const request = serializeJsonBody(input);
+  const response = await fetch(buildApiUrl(COMPUTERS_API_PATHS.register), {
+    method: "POST",
+    headers: request.headers,
+    body: request.body,
+  });
+
+  const payload = await parseResponseJsonSafe(response);
+  if (!response.ok) {
+    throwNormalizedApiError(payload, response.status);
+  }
+
+  const data = parseFoundationSuccessEnvelope<RegisterComputerResult>(payload);
   if (!data) {
     throwInvalidSuccessEnvelope(response.status);
   }
@@ -136,6 +166,29 @@ export async function reissueComputerToken(
   }
 
   const data = parseFoundationSuccessEnvelope<ReissueTokenResult>(payload);
+  if (!data) {
+    throwInvalidSuccessEnvelope(response.status);
+  }
+
+  return data;
+}
+
+export async function reissueComputerRegistrationSecret(
+  input: ReissueRegistrationSecretInput,
+): Promise<ReissueRegistrationSecretResult> {
+  const request = serializeJsonBody(input);
+  const response = await fetch(buildApiUrl(buildReissueComputerRegistrationSecretPath()), {
+    method: "POST",
+    headers: withAuthorizationHeader(request.headers),
+    body: request.body,
+  });
+
+  const payload = await parseResponseJsonSafe(response);
+  if (!response.ok) {
+    throwNormalizedApiError(payload, response.status);
+  }
+
+  const data = parseFoundationSuccessEnvelope<ReissueRegistrationSecretResult>(payload);
   if (!data) {
     throwInvalidSuccessEnvelope(response.status);
   }

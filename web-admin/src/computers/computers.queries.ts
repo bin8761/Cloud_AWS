@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getComputer,
   listComputers,
+  registerComputer,
+  reissueComputerRegistrationSecret,
   reissueComputerToken,
   updateComputer,
 } from "./computers.api";
@@ -10,6 +12,8 @@ import type {
   Computer,
   ComputersListResponse,
   ComputersListQuery,
+  RegisterComputerInput,
+  ReissueRegistrationSecretInput,
   ReissueTokenInput,
   UpdateComputerInput,
 } from "./computers.types";
@@ -36,6 +40,17 @@ export function useComputersListQuery(query: ComputersListQuery = {}) {
   return useQuery({
     queryKey: computersQueryKeys.list(query),
     queryFn: () => listComputers(query),
+  });
+}
+
+export function useRegisterComputerMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: RegisterComputerInput) => registerComputer(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: computersQueryKeys.all });
+    },
   });
 }
 
@@ -194,5 +209,12 @@ export function useReissueComputerTokenMutation() {
     },
     mutationFn: ({ id, input }: ReissueComputerTokenMutationInput) =>
       reissueComputerToken(id, input),
+  });
+}
+
+export function useReissueComputerRegistrationSecretMutation() {
+  return useMutation({
+    mutationFn: (input: ReissueRegistrationSecretInput) =>
+      reissueComputerRegistrationSecret(input),
   });
 }

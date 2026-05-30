@@ -26,6 +26,7 @@ export type VerifyTenantRegistrationInput = {
 export type VerifyTenantRegistrationResult = {
   accessToken: string;
   refreshToken?: string | null;
+  computerRegistrationSecret: string;
 };
 
 export type LoginResult = {

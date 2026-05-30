@@ -43,6 +43,26 @@ export type ReissueTokenResult = {
   deviceToken: string;
 };
 
+export type RegisterComputerInput = {
+  tenantCode: string;
+  registrationSecret: string;
+  macAddress: string;
+  name?: string;
+};
+
+export type RegisterComputerResult = {
+  computer: Computer;
+  deviceToken: string;
+};
+
+export type ReissueRegistrationSecretInput = {
+  reason: string;
+};
+
+export type ReissueRegistrationSecretResult = {
+  computerRegistrationSecret: string;
+};
+
 export type ComputerRowViewModel = {
   computer: Computer;
   presence: {

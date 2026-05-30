@@ -1,0 +1,15 @@
+C:\Users\yasuo\Desktop\thuctap\desktop-client\heartbeat-client\dist\main\main.js:2
+`;await i.writeFile(e,g,"utf8")},A=async()=>{},_="http://localhost:5173",y=process.env.HEARTBEAT_SMOKE_STDOUT==="1";let o=null,s=!1;const D=()=>r.resolve(n.app.getAppPath(),"dist/preload/preload.js"),m=()=>r.resolve(n.app.getAppPath(),"dist/renderer/index.html"),I=()=>{n.ipcMain.handle("config:load",async()=>l()),n.ipcMain.handle("config:save",async(t,e)=>(await C(e),l()))},d=()=>{if(o=new n.BrowserWindow({width:920,height:640,minWidth:760,minHeight:520,title:"CloudCMS Heartbeat Client",webPreferences:{preload:D(),nodeIntegration:!1,contextIsolation:!0}}),o.on("closed",()=>{o=null}),y&&o.webContents.on("did-finish-load",()=>{const t=o?.getTitle()??"";console.log(`SMOKE_WINDOW_TITLE:${t}`)}),!n.app.isPackaged){o.loadURL(_),o.webContents.openDevTools({mode:"detach"});return}o.loadFile(m())},f=async()=>{s||(s=!0,await A(),n.app.quit())};n.app.whenReady().then(()=>{I(),d(),n.app.on("activate",()=>{n.BrowserWindow.getAllWindows().length===0&&d()})});n.app.on("window-all-closed",()=>{process.platform!=="darwin"&&f()});n.app.on("before-quit",t=>{s||(t.preventDefault(),f())});
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ^
+
+TypeError: Cannot read properties of undefined (reading 'whenReady')
+    at Object.<anonymous> (C:\Users\yasuo\Desktop\thuctap\desktop-client\heartbeat-client\dist\main\main.js:2:853)
+    at Module._compile (node:internal/modules/cjs/loader:1484:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1564:10)
+    at Module.load (node:internal/modules/cjs/loader:1295:32)
+    at Module._load (node:internal/modules/cjs/loader:1111:12)
+    at c._load (node:electron/js2c/node_init:2:16955)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:189:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.18.0

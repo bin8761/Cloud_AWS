@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useAuthStore } from "@/auth/auth.store";
 import { ComputerCardList } from "@/computers/ComputerCardList";
+import { CreateComputerModal } from "@/computers/CreateComputerModal";
 import { ComputerDetailDrawer } from "@/computers/ComputerDetailDrawer";
 import { ComputerListToolbar } from "@/computers/ComputerListToolbar";
+import { ReissueRegistrationSecretModal } from "@/computers/ReissueRegistrationSecretModal";
 import { ReissueTokenModal } from "@/computers/ReissueTokenModal";
 import { ComputerTable } from "@/computers/ComputerTable";
 import { selectComputerRowViewModels } from "@/computers/computerSelectors";
@@ -9,7 +12,9 @@ import type { ComputerStatus } from "@/computers/computers.types";
 import {
   useComputerDetailQuery,
   useComputersListQuery,
+  useRegisterComputerMutation,
   useReissueComputerTokenMutation,
+  useReissueComputerRegistrationSecretMutation,
   useUpdateComputerMutation,
 } from "@/computers/computers.queries";
 import { debounce } from "@/lib/debounce";
@@ -82,6 +87,8 @@ export function ComputersPage(): JSX.Element {
   const [selectedComputerId, setSelectedComputerId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
   const [isReissueModalOpen, setIsReissueModalOpen] = useState<boolean>(false);
+  const [isRegistrationSecretModalOpen, setIsRegistrationSecretModalOpen] = useState<boolean>(false);
+  const [isCreateComputerModalOpen, setIsCreateComputerModalOpen] = useState<boolean>(false);
   const [editableName, setEditableName] = useState<string>("");
   const [editableStatus, setEditableStatus] = useState<ComputerStatus>("INACTIVE");
   const [editableNotes, setEditableNotes] = useState<string>("");
@@ -153,6 +160,9 @@ export function ComputersPage(): JSX.Element {
   const computerDetailQuery = useComputerDetailQuery(shouldFetchDetailFromApi ? selectedComputerId : null);
   const updateComputerMutation = useUpdateComputerMutation();
   const reissueComputerTokenMutation = useReissueComputerTokenMutation();
+  const reissueComputerRegistrationSecretMutation = useReissueComputerRegistrationSecretMutation();
+  const registerComputerMutation = useRegisterComputerMutation();
+  const tenantCode = useAuthStore((state) => state.tenant?.code ?? "");
   const resolvedDetailComputer = computerDetailQuery.data ?? selectedComputer?.computer ?? null;
   const resolvedAdminStatus = selectedComputer?.adminStatusLabel ?? (resolvedDetailComputer ? getAdminStatusLabel(resolvedDetailComputer.status) : null);
   const resolvedRealtimeLabel = selectedComputer?.realtimeLabel ?? "Unavailable";
@@ -187,6 +197,18 @@ export function ComputersPage(): JSX.Element {
   const handleCloseReissueModal = (): void => {
     setIsReissueModalOpen(false);
   };
+  const handleOpenRegistrationSecretModal = (): void => {
+    setIsRegistrationSecretModalOpen(true);
+  };
+  const handleCloseRegistrationSecretModal = (): void => {
+    setIsRegistrationSecretModalOpen(false);
+  };
+  const handleOpenCreateComputerModal = (): void => {
+    setIsCreateComputerModalOpen(true);
+  };
+  const handleCloseCreateComputerModal = (): void => {
+    setIsCreateComputerModalOpen(false);
+  };
   const handleSaveComputer = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
@@ -211,6 +233,23 @@ export function ComputersPage(): JSX.Element {
 
     return { deviceToken: result.deviceToken };
   };
+  const handleConfirmRegistrationSecretReissue = async (input: {
+    reason: string;
+  }): Promise<{ registrationSecret: string }> => {
+    const result = await reissueComputerRegistrationSecretMutation.mutateAsync({
+      reason: input.reason,
+    });
+    return { registrationSecret: result.computerRegistrationSecret };
+  };
+  const handleCreateComputer = async (input: {
+    tenantCode: string;
+    registrationSecret: string;
+    macAddress: string;
+    name?: string;
+  }): Promise<{ deviceToken: string }> => {
+    const result = await registerComputerMutation.mutateAsync(input);
+    return { deviceToken: result.deviceToken };
+  };
 
   void statusFilter;
   void debouncedSearch;
@@ -230,9 +269,19 @@ export function ComputersPage(): JSX.Element {
               Manage tenant computers with searchable inventory, operational status, and realtime presence visibility.
             </p>
           </div>
-          <Button type="button" variant="neutral" size="compact" disabled aria-disabled="true">
-            Create computer (Post-MVP)
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="danger"
+              size="compact"
+              onClick={handleOpenRegistrationSecretModal}
+            >
+              Reissue registration secret
+            </Button>
+            <Button type="button" variant="neutral" size="compact" onClick={handleOpenCreateComputerModal}>
+              Create computer
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -474,6 +523,17 @@ export function ComputersPage(): JSX.Element {
         computerId={resolvedDetailComputer?.id ?? selectedComputerId}
         computerDisplayName={resolvedDetailComputer?.name?.trim() || selectedComputer?.displayName || "Unknown computer"}
         onConfirmReissue={handleConfirmReissue}
+      />
+      <ReissueRegistrationSecretModal
+        isOpen={isRegistrationSecretModalOpen}
+        onClose={handleCloseRegistrationSecretModal}
+        onConfirmReissue={handleConfirmRegistrationSecretReissue}
+      />
+      <CreateComputerModal
+        isOpen={isCreateComputerModalOpen}
+        onClose={handleCloseCreateComputerModal}
+        tenantCode={tenantCode}
+        onCreate={handleCreateComputer}
       />
     </section>
   );

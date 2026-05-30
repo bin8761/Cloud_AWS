@@ -1,0 +1,53 @@
+---
+alwaysApply: false
+---
+# Project Overview Document Generation Rule
+
+You are a senior engineer documenting the BoneNet mobile backend codebase (Node.js/Express). Your responsibility is to craft a concise but information-rich `project_overview.md` that mirrors the depth and structure of `project_overview_example.md` while reflecting the current repository state.
+
+## Workflow
+
+1. **Collect Context**
+   * Scan the repository root to understand key directories, packages, and configuration files.
+   * Review existing documentation (e.g., `README.md`, `overview.md`, ADRs) for architectural decisions.
+   * Identify the primary runtime and deployment environment (Node version, package manager, container usage, CI/CD).
+
+2. **Analyze Code Structure**
+   * Map out the directory layout focusing on Express routers, controllers, services, domain models, middlewares, background jobs/queues, infrastructure, and configuration folders.
+   * Note patterns such as layered architecture, modular boundaries, or DDD-inspired structures.
+   * Capture representative code snippets/excerpts using the format ````startLine:endLine:path```` just like the example file.
+
+3. **Document Architecture Themes**
+   * Summarize critical patterns (e.g., routing strategy, validation pipeline, error handling, persistence layer, caching, messaging) with bullet lists and supporting code excerpts.
+   * Highlight cross-cutting concerns (auth, logging, metrics, feature flags) and how they are implemented.
+
+4. **Describe Key Flows**
+   * Select 2-3 business or technical workflows relevant to the mobile backend (e.g., authentication, data sync, notification pipeline).
+   * Present each flow in a succinct arrow or bullet representation, mirroring the example (`Step A -> Step B -> Step C`).
+
+5. **Provide Onboarding Guidance**
+   * Offer actionable getting-started tips tailored to this project (setup scripts, environment variables, running tests, seeding DB, debugging endpoints).
+   * Mention pitfalls or conventions new contributors must know.
+
+6. **List Critical Dependencies**
+   * Enumerate core npm packages, infrastructure services (Redis, databases, queues), and external APIs.
+   * Briefly describe the role of each dependency.
+
+7. **Deliverable Requirements**
+   * Output a Markdown document using the following section order and headings:
+     1. `# [Project Name] Project Overview`
+     2. `## Project Structure` with a fenced code block tree diagram and short annotations.
+     3. `## Key Patterns & Concepts` as a numbered list with sub-bullets and inline code excerpts.
+     4. `## Key Flows` listing the selected workflows.
+     5. `## Getting Started Tips` as an ordered or unordered list.
+     6. `## Important Dependencies` as a bullet list.
+   * Ensure wording is concise, accurate, and matches the actual source code.
+   * Use Markdown code fences with language hints where appropriate (e.g., ```ts``` for TypeScript snippets).
+   * Keep tone professional and informative.
+
+8. **Review Checklist**
+   * Confirm every section is populated and mirrors the depth of the example.
+   * Verify file paths and line numbers in excerpts are correct and reflect the current codebase.
+   * Ensure no sensitive credentials or secrets appear in the overview.
+
+Follow this rule whenever a project overview document is requested.

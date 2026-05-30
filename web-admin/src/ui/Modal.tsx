@@ -34,6 +34,11 @@ export function Modal({
   const descriptionId = useId();
   const dialogRef = useRef<HTMLElement | null>(null);
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -67,7 +72,7 @@ export function Modal({
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape" && closeOnEscape) {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -114,7 +119,7 @@ export function Modal({
         lastActiveElementRef.current.focus();
       }
     };
-  }, [closeOnEscape, isOpen, onClose]);
+  }, [closeOnEscape, isOpen]);
 
   if (!isOpen) {
     return null;
@@ -123,7 +128,7 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-slate-900/60"
+        className="absolute inset-0 bg-slate-950/75 backdrop-blur-[2px]"
         onClick={closeOnBackdropClick ? onClose : undefined}
         aria-hidden="true"
       />
