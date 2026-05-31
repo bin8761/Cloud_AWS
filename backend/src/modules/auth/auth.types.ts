@@ -40,11 +40,22 @@ export type VerifyRegisterTenantInput = {
   verificationCode: string;
 };
 
+export type ResendRegisterTenantVerificationInput = {
+  registrationId: string;
+};
+
 export type VerifyRegisterTenantOutput = {
   tenant: AuthTenantDto;
   user: AuthUserDto;
   computerRegistrationSecret: string;
 } & AuthTokenPairDto;
+
+export type ResendRegisterTenantVerificationOutput = {
+  registrationId: string;
+  email: string;
+  expiresInSeconds: number;
+  resendAfterSeconds: number;
+};
 
 export type LoginInput = {
   email: string;

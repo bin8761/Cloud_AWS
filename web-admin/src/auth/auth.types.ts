@@ -23,6 +23,17 @@ export type VerifyTenantRegistrationInput = {
   verificationCode: string;
 };
 
+export type ResendTenantRegistrationInput = {
+  registrationId: string;
+};
+
+export type ResendTenantRegistrationResult = {
+  registrationId: string;
+  email: string;
+  expiresInSeconds: number;
+  resendAfterSeconds: number;
+};
+
 export type VerifyTenantRegistrationResult = {
   accessToken: string;
   refreshToken?: string | null;

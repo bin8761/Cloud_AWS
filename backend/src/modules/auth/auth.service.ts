@@ -35,6 +35,8 @@ import {
 } from "./auth.verification";
 import {
   type AuthRole,
+  type ResendRegisterTenantVerificationInput,
+  type ResendRegisterTenantVerificationOutput,
   mapUserRoleToAuthRole,
   type GetCurrentUserOutput,
   type LoginInput,
@@ -82,6 +84,12 @@ type RegisterTenantRequestContext = {
 };
 
 type VerifyTenantRegistrationRequestContext = {
+  requestId?: string;
+  ip?: string;
+  userAgent?: string;
+};
+
+type ResendTenantRegistrationRequestContext = {
   requestId?: string;
   ip?: string;
   userAgent?: string;
@@ -442,6 +450,122 @@ export class AuthService {
         INTERNAL_ERROR_STATUS_CODE,
         "INTERNAL_ERROR",
         REGISTER_TENANT_VERIFY_FAILED_MESSAGE,
+      );
+    }
+  }
+
+  public async resendTenantRegistrationVerificationCode(
+    input: ResendRegisterTenantVerificationInput,
+    context: ResendTenantRegistrationRequestContext = {},
+  ): Promise<ResendRegisterTenantVerificationOutput> {
+    const requestId = context.requestId ?? UNKNOWN_REQUEST_ID;
+    let normalizedAdminEmailForLog: string | undefined;
+
+    try {
+      const pendingRegistration =
+        await this.prismaClient.pendingTenantRegistration.findUnique({
+          where: {
+            id: input.registrationId,
+          },
+          include: {
+            verificationCode: true,
+          },
+        });
+
+      if (!pendingRegistration || !pendingRegistration.verificationCode) {
+        throw new AppError(
+          UNAUTHORIZED_STATUS_CODE,
+          "UNAUTHORIZED",
+          REGISTER_TENANT_VERIFY_INVALID_OR_EXPIRED_MESSAGE,
+        );
+      }
+
+      normalizedAdminEmailForLog = pendingRegistration.adminEmail;
+      const now = this.nowProvider();
+      const isPendingRegistrationExpired =
+        pendingRegistration.expiresAt.getTime() <= now.getTime();
+      const isPendingRegistrationConsumed = pendingRegistration.consumedAt
+        ? true
+        : false;
+      if (isPendingRegistrationExpired || isPendingRegistrationConsumed) {
+        throw new AppError(
+          UNAUTHORIZED_STATUS_CODE,
+          "UNAUTHORIZED",
+          REGISTER_TENANT_VERIFY_INVALID_OR_EXPIRED_MESSAGE,
+        );
+      }
+
+      const rawVerificationCode =
+        this.verificationService.generateVerificationCode();
+      const verificationCodeHash = this.verificationService.hashVerificationCode(
+        rawVerificationCode,
+      );
+      const verificationCodeTtlSeconds =
+        this.verificationService.getVerificationCodeTtlSeconds();
+      const verificationCodeExpiresAt = new Date(
+        now.getTime() + verificationCodeTtlSeconds * 1000,
+      );
+
+      await this.prismaClient.verificationCode.update({
+        where: {
+          id: pendingRegistration.verificationCode.id,
+        },
+        data: {
+          codeHash: verificationCodeHash,
+          expiresAt: verificationCodeExpiresAt,
+          consumedAt: null,
+          attemptCount: 0,
+          lastSentAt: now,
+        },
+      });
+
+      await this.emailSender.sendVerificationCode(
+        pendingRegistration.adminEmail,
+        rawVerificationCode,
+        VerificationPurpose.REGISTER_TENANT,
+      );
+
+      this.logRegisterTenantVerificationSent({
+        requestId,
+        normalizedAdminEmail: pendingRegistration.adminEmail,
+        tenantCode: pendingRegistration.tenantCode,
+        ip: context.ip,
+        userAgent: context.userAgent,
+      });
+
+      return {
+        registrationId: pendingRegistration.id,
+        email: pendingRegistration.adminEmail,
+        expiresInSeconds: verificationCodeTtlSeconds,
+        resendAfterSeconds: REGISTER_TENANT_RESEND_AFTER_SECONDS,
+      };
+    } catch (error) {
+      if (error instanceof AppError) {
+        this.logRegisterTenantVerificationFailed({
+          requestId,
+          normalizedAdminEmail: normalizedAdminEmailForLog,
+          reason: error.code,
+          status: String(error.statusCode),
+          ip: context.ip,
+          userAgent: context.userAgent,
+        });
+
+        throw error;
+      }
+
+      this.logRegisterTenantVerificationFailed({
+        requestId,
+        normalizedAdminEmail: normalizedAdminEmailForLog,
+        reason: "INTERNAL_ERROR",
+        status: String(INTERNAL_ERROR_STATUS_CODE),
+        ip: context.ip,
+        userAgent: context.userAgent,
+      });
+
+      throw new AppError(
+        INTERNAL_ERROR_STATUS_CODE,
+        "INTERNAL_ERROR",
+        REGISTER_TENANT_REQUEST_FAILED_MESSAGE,
       );
     }
   }

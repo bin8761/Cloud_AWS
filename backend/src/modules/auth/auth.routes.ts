@@ -7,6 +7,7 @@ import {
   logoutRateLimitMiddleware,
   refreshRateLimitMiddleware,
   registerTenantRateLimitMiddleware,
+  registerTenantResendRateLimitMiddleware,
   registerTenantVerifyRateLimitMiddleware,
 } from "./auth.rate-limit";
 import {
@@ -14,6 +15,7 @@ import {
   logoutSchema,
   refreshSchema,
   registerTenantSchema,
+  resendTenantRegistrationSchema,
   verifyTenantRegistrationSchema,
 } from "./auth.schema";
 
@@ -27,6 +29,16 @@ authRouter.post(
   }),
   (request, response, next) =>
     void authController.registerTenant(request, response, next),
+);
+
+authRouter.post(
+  "/register-tenant/resend",
+  registerTenantResendRateLimitMiddleware,
+  validateRequest({
+    body: resendTenantRegistrationSchema,
+  }),
+  (request, response, next) =>
+    void authController.resendTenantRegistrationVerificationCode(request, response, next),
 );
 
 authRouter.post(

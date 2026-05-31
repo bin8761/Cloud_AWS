@@ -27,6 +27,9 @@ const REGISTER_TENANT_VERIFY_RATE_LIMIT_REFILL_TOKENS = 1;
 // Task 167 decision: MVP uses token-bucket approximation instead of a custom
 // auth-specific "block-until-expiry" helper for verify-code limiting.
 const REGISTER_TENANT_VERIFY_RATE_LIMIT_REFILL_WINDOW_SECONDS = 5 * 60;
+const REGISTER_TENANT_RESEND_RATE_LIMIT_CAPACITY = 1;
+const REGISTER_TENANT_RESEND_RATE_LIMIT_REFILL_TOKENS = 1;
+const REGISTER_TENANT_RESEND_RATE_LIMIT_REFILL_WINDOW_SECONDS = 60;
 const LOGIN_RATE_LIMIT_CAPACITY = 5;
 const LOGIN_RATE_LIMIT_REFILL_TOKENS = 1;
 const LOGIN_RATE_LIMIT_REFILL_WINDOW_SECONDS = 3 * 60;
@@ -38,6 +41,7 @@ const LOGOUT_RATE_LIMIT_REFILL_TOKENS = 1;
 const LOGOUT_RATE_LIMIT_REFILL_WINDOW_SECONDS = 2;
 const REGISTER_TENANT_RATE_LIMIT_REASON = "register_tenant_rate_limit_hit";
 const REGISTER_TENANT_VERIFY_RATE_LIMIT_REASON = "register_tenant_verify_rate_limit_hit";
+const REGISTER_TENANT_RESEND_RATE_LIMIT_REASON = "register_tenant_resend_rate_limit_hit";
 const LOGIN_RATE_LIMIT_REASON = "login_rate_limit_hit";
 const REFRESH_RATE_LIMIT_REASON = "refresh_rate_limit_hit";
 const LOGOUT_RATE_LIMIT_REASON = "logout_rate_limit_hit";
@@ -199,6 +203,12 @@ const registerTenantVerifyRateLimitExceededHandler = (
   logRateLimitHit(context, REGISTER_TENANT_VERIFY_RATE_LIMIT_REASON);
 };
 
+const registerTenantResendRateLimitExceededHandler = (
+  context: RateLimitExceededContext,
+): void => {
+  logRateLimitHit(context, REGISTER_TENANT_RESEND_RATE_LIMIT_REASON);
+};
+
 const loginRateLimitExceededHandler = (context: RateLimitExceededContext): void => {
   logRateLimitHit(
     context,
@@ -231,6 +241,15 @@ export const registerTenantVerifyRateLimitMiddleware = createRateLimitMiddleware
   refillTokens: REGISTER_TENANT_VERIFY_RATE_LIMIT_REFILL_TOKENS,
   refillWindowSeconds: REGISTER_TENANT_VERIFY_RATE_LIMIT_REFILL_WINDOW_SECONDS,
   onRateLimitExceeded: registerTenantVerifyRateLimitExceededHandler,
+});
+
+export const registerTenantResendRateLimitMiddleware = createRateLimitMiddleware({
+  store: authRateLimitStore,
+  keyStrategy: registerTenantVerifyIdIpRateLimitKeyStrategy,
+  capacity: REGISTER_TENANT_RESEND_RATE_LIMIT_CAPACITY,
+  refillTokens: REGISTER_TENANT_RESEND_RATE_LIMIT_REFILL_TOKENS,
+  refillWindowSeconds: REGISTER_TENANT_RESEND_RATE_LIMIT_REFILL_WINDOW_SECONDS,
+  onRateLimitExceeded: registerTenantResendRateLimitExceededHandler,
 });
 
 export const loginRateLimitMiddleware = createRateLimitMiddleware({

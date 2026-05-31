@@ -3,6 +3,7 @@ import { authService } from "./auth.service";
 import type {
   LoginInput,
   LogoutInput,
+  ResendRegisterTenantVerificationInput,
   RefreshInput,
   RegisterTenantInput,
   VerifyRegisterTenantInput,
@@ -43,6 +44,31 @@ export class AuthController {
         ip: request.ip,
         userAgent: request.get("user-agent"),
       });
+
+      response.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  public async resendTenantRegistrationVerificationCode(
+    request: Request,
+    response: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const input = request.body as ResendRegisterTenantVerificationInput;
+      const data = await authService.resendTenantRegistrationVerificationCode(
+        input,
+        {
+          requestId: request.requestId,
+          ip: request.ip,
+          userAgent: request.get("user-agent"),
+        },
+      );
 
       response.status(200).json({
         success: true,

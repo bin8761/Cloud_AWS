@@ -38,6 +38,10 @@ export const verifyTenantRegistrationSchema = z.object({
   verificationCode: z.string().trim().regex(/^\d{6}$/),
 });
 
+export const resendTenantRegistrationSchema = z.object({
+  registrationId: z.string().trim().min(1),
+});
+
 export const loginSchema = z.object({
   email: normalizedEmailSchema,
   password: z.string().min(1),
@@ -56,6 +60,7 @@ export const authRequestSchemas = {
   logoutSchema,
   refreshSchema,
   registerTenantSchema,
+  resendTenantRegistrationSchema,
   verifyTenantRegistrationSchema,
 };
 

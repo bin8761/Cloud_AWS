@@ -5,6 +5,8 @@ import type {
   MeResponse,
   RegisterTenantInput,
   RegisterTenantResult,
+  ResendTenantRegistrationInput,
+  ResendTenantRegistrationResult,
   VerifyTenantRegistrationInput,
   VerifyTenantRegistrationResult,
 } from "./auth.types";
@@ -31,6 +33,7 @@ export type RefreshResult = {
 const AUTH_API_PATHS = {
   login: "/api/auth/login",
   registerTenant: "/api/auth/register-tenant",
+  resendTenantRegistration: "/api/auth/register-tenant/resend",
   verifyTenantRegistration: "/api/auth/register-tenant/verify",
   me: "/api/auth/me",
   logout: "/api/auth/logout",
@@ -121,6 +124,33 @@ export async function verifyTenantRegistration(
 
   const data =
     parseFoundationSuccessEnvelope<VerifyTenantRegistrationResult>(payload);
+  if (!data) {
+    throwInvalidSuccessEnvelope(response.status);
+  }
+
+  return data;
+}
+
+export async function resendTenantRegistration(
+  input: ResendTenantRegistrationInput,
+): Promise<ResendTenantRegistrationResult> {
+  const request = serializeJsonBody(input);
+  const response = await fetch(
+    buildApiUrl(AUTH_API_PATHS.resendTenantRegistration),
+    {
+      method: "POST",
+      headers: request.headers,
+      body: request.body,
+    },
+  );
+
+  const payload = await parseResponseJsonSafe(response);
+  if (!response.ok) {
+    throwNormalizedApiError(payload, response.status);
+  }
+
+  const data =
+    parseFoundationSuccessEnvelope<ResendTenantRegistrationResult>(payload);
   if (!data) {
     throwInvalidSuccessEnvelope(response.status);
   }

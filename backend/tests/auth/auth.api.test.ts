@@ -600,6 +600,14 @@ const verifyTenantRegistration = async (
   });
 };
 
+const resendTenantRegistrationVerificationCode = async (
+  registrationId: string,
+): Promise<SupertestResponse> => {
+  return request(app).post("/api/auth/register-tenant/resend").send({
+    registrationId,
+  });
+};
+
 const getSerializedLoggerCalls = (): string => {
   return JSON.stringify({
     info: loggerInfoSpy.mock.calls,
@@ -752,6 +760,68 @@ describe.sequential("Auth API tests (Task 310->327)", () => {
       accessToken: expect.any(String),
       refreshToken: expect.any(String),
     });
+  });
+
+  it("Task 315A: POST /api/auth/register-tenant/resend success", async () => {
+    const payload = createRegisterTenantPayload();
+    const registered = await registerTenantAndReadCode(payload);
+    const sendCallCountBeforeResend = sendVerificationCodeSpy.mock.calls.length;
+
+    const response = await resendTenantRegistrationVerificationCode(
+      registered.registrationId,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toMatchObject({
+      registrationId: registered.registrationId,
+      email: payload.adminEmail.toLowerCase(),
+      expiresInSeconds: expect.any(Number),
+      resendAfterSeconds: 60,
+    });
+    expect(sendVerificationCodeSpy.mock.calls.length).toBe(
+      sendCallCountBeforeResend + 1,
+    );
+    const resendCall = sendVerificationCodeSpy.mock.calls[sendCallCountBeforeResend];
+    expect(resendCall?.[0]).toBe(payload.adminEmail.toLowerCase());
+    expect(resendCall?.[2]).toBe(VerificationPurpose.REGISTER_TENANT);
+  });
+
+  it("Task 315B: resend fails for consumed registration", async () => {
+    const payload = createRegisterTenantPayload();
+    const registered = await registerTenantAndReadCode(payload);
+    const verifyResponse = await verifyTenantRegistration(
+      registered.registrationId,
+      registered.verificationCode,
+    );
+    expect(verifyResponse.status).toBe(200);
+
+    const response = await resendTenantRegistrationVerificationCode(
+      registered.registrationId,
+    );
+    expect(response.status).toBe(401);
+    expect(response.body.success).toBe(false);
+    expect(response.body.error.code).toBe("UNAUTHORIZED");
+    expect(response.body.error.message).toBe(
+      "The verification code is invalid or expired.",
+    );
+  });
+
+  it("Task 315C: resend rate limit enforces 60 seconds per registrationId+ip", async () => {
+    const payload = createRegisterTenantPayload();
+    const registered = await registerTenantAndReadCode(payload);
+
+    const firstResend = await resendTenantRegistrationVerificationCode(
+      registered.registrationId,
+    );
+    const secondResend = await resendTenantRegistrationVerificationCode(
+      registered.registrationId,
+    );
+
+    expect(firstResend.status).toBe(200);
+    expect(secondResend.status).toBe(429);
+    expect(secondResend.body.success).toBe(false);
+    expect(secondResend.body.error.code).toBe("TOO_MANY_REQUESTS");
   });
 
   it("Task 316: wrong verification code", async () => {

@@ -3,6 +3,7 @@
 ## Endpoints (MVP)
 
 - `POST /api/auth/register-tenant`
+- `POST /api/auth/register-tenant/resend`
 - `POST /api/auth/register-tenant/verify`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
